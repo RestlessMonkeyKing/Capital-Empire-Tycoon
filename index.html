@@ -40,7 +40,6 @@ body::after {
 }
 .floating-symbol { position: fixed; font-family: 'Outfit', sans-serif; font-weight: 900; color: rgba(245,196,81,0.035); pointer-events: none; z-index: -1; animation: floatSym linear infinite; user-select: none; }
 @keyframes floatSym { from { transform: translateY(110vh) rotate(0deg); } to { transform: translateY(-20vh) rotate(360deg); } }
-#loading-screen.fade-out { opacity: 0; pointer-events: none; }
 ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; } ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
 .game { display: grid; grid-template-rows: auto 1fr; height: 100vh; max-width: 1600px; margin: 0 auto; padding: 12px; gap: 10px; }
@@ -337,40 +336,44 @@ body::after {
   .game { padding: 8px; gap: 8px; } .hud { grid-template-columns: 1fr; gap: 8px; padding: 8px 14px; } .hud-stats { gap: 16px; } .stat-money .stat-value { font-size: 20px; } .stat-value { font-size: 18px; } .grid-cell { width: 68px; height: 68px; } .brand-text { font-size: 14px; } .toasts { right: 8px; left: 8px; max-width: none; } .toast { min-width: 0; } .modal { max-height: 90vh; }
 }
 
-.auth-tabs { display: flex; gap: 2px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
-.auth-tab { flex: 1; background: transparent; border: none; color: var(--muted); padding: 10px; cursor: pointer; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 2px solid transparent; transition: all .2s; margin-bottom: -1px; }
-.auth-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
-.auth-form { display: none; }
-.auth-form.active { display: block; }
-.auth-input { width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--fg); padding: 10px 12px; border-radius: 9px; font-family: inherit; font-size: 13px; outline: none; margin-bottom: 10px; transition: border-color .2s; }
-.auth-input:focus { border-color: var(--gold); }
-.auth-input::placeholder { color: var(--muted); opacity: 0.6; }
-.auth-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); font-weight: 700; margin-bottom: 5px; display: block; }
-.auth-btn { width: 100%; background: linear-gradient(135deg, var(--gold), var(--gold-2)); color: #1a1408; border: none; padding: 11px; border-radius: 10px; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; transition: all .2s; margin-bottom: 8px; }
-.auth-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
-.auth-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none; }
-.auth-btn.secondary { background: var(--card-2); color: var(--fg); border: 1px solid var(--border); }
-.auth-btn.secondary:hover { border-color: var(--gold); color: var(--gold); background: var(--card-3); }
-.auth-divider { display: flex; align-items: center; gap: 10px; margin: 12px 0; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; }
-.auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-.auth-error { color: var(--crimson); font-size: 11px; margin-bottom: 10px; text-align: center; min-height: 16px; }
-.auth-success { color: var(--emerald); font-size: 11px; margin-bottom: 10px; text-align: center; min-height: 16px; }
-.auth-info { text-align: center; font-size: 11px; color: var(--muted); margin-top: 8px; }
-.auth-info b { color: var(--fg); }
-#auth-status { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--card-2); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; }
-#auth-status i { color: var(--gold); }
-#auth-status span { font-size: 12px; color: var(--fg-2); }
+/* AUTH & LOADING */
+#loading-screen { position:fixed; inset:0; background:var(--bg); z-index:5000; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; transition:opacity .6s; }
+#loading-screen.fade-out { opacity:0; pointer-events:none; }
+.auth-tabs { display:flex; gap:2px; margin-bottom:12px; border-bottom:1px solid var(--border); }
+.auth-tab { flex:1; background:transparent; border:none; color:var(--muted); padding:10px; cursor:pointer; font-family:'Outfit',sans-serif; font-weight:600; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; border-bottom:2px solid transparent; transition:all .2s; margin-bottom:-1px; }
+.auth-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+.auth-form { display:none; }
+.auth-form.active { display:block; }
+.auth-input { width:100%; background:var(--card); border:1px solid var(--border); color:var(--fg); padding:10px 12px; border-radius:9px; font-family:inherit; font-size:13px; outline:none; margin-bottom:10px; transition:border-color .2s; }
+.auth-input:focus { border-color:var(--gold); }
+.auth-input::placeholder { color:var(--muted); opacity:0.6; }
+.auth-label { font-size:10px; text-transform:uppercase; letter-spacing:0.15em; color:var(--muted); font-weight:700; margin-bottom:5px; display:block; }
+.auth-btn { width:100%; background:linear-gradient(135deg,var(--gold),var(--gold-2)); color:#1a1408; border:none; padding:11px; border-radius:10px; font-family:'Outfit',sans-serif; font-weight:700; font-size:13px; cursor:pointer; transition:all .2s; margin-bottom:8px; }
+.auth-btn:hover { filter:brightness(1.1); transform:translateY(-1px); }
+.auth-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; filter:none; }
+.auth-btn.secondary { background:var(--card-2); color:var(--fg); border:1px solid var(--border); }
+.auth-btn.secondary:hover { border-color:var(--gold); color:var(--gold); background:var(--card-3); }
+.auth-divider { display:flex; align-items:center; gap:10px; margin:12px 0; color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:0.1em; }
+.auth-divider::before,.auth-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+.auth-error { color:var(--crimson); font-size:11px; margin-bottom:10px; text-align:center; min-height:16px; }
+.auth-info { text-align:center; font-size:11px; color:var(--muted); margin-top:8px; }
+#auth-status { display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--card-2); border:1px solid var(--border); border-radius:10px; margin-bottom:12px; }
+#auth-status i { color:var(--gold); }
+#auth-status span { font-size:12px; color:var(--fg-2); }
 
 </style>
 <base target="_blank">
 </head>
 <body>
 
-<div id="loading-screen" style="position:fixed;inset:0;background:var(--bg);z-index:5000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:opacity .5s;">
+<div id="loading-screen">
   <div style="width:60px;height:60px;border-radius:16px;background:linear-gradient(135deg,var(--gold-3),var(--gold),var(--gold-2));display:grid;place-items:center;font-family:'Outfit',sans-serif;font-weight:900;color:#1a1408;font-size:28px;box-shadow:0 4px 30px rgba(245,196,81,0.4);animation:pulse 1.5s ease-in-out infinite;">C</div>
-  <div style="font-family:'Outfit',sans-serif;font-weight:700;color:var(--fg);font-size:16px;">Connecting to Capital Empire...</div>
+  <div style="font-family:'Outfit',sans-serif;font-weight:700;color:var(--fg);font-size:16px;">Capital Empire</div>
   <div id="loading-error" style="color:var(--crimson);font-size:12px;display:none;max-width:300px;text-align:center;"></div>
+  <button class="auth-btn secondary" id="loading-skip" style="display:none;width:auto;padding:8px 20px;"><i class="fas fa-forward"></i> Continue Offline</button>
 </div>
+
+<div class="modal-bg" id="modal-auth"><div class="modal" style="max-width:420px"><div class="modal-head"><div class="modal-title"><i class="fas fa-user"></i> Account</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div><div class="modal-body" id="auth-body"></div></div></div>
 
 <div class="game">
   <header class="hud">
@@ -459,7 +462,6 @@ body::after {
   </main>
 </div>
 
-<div class="modal-bg" id="modal-auth"><div class="modal" style="max-width:420px"><div class="modal-head"><div class="modal-title"><i class="fas fa-user"></i> Account</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div><div class="modal-body" id="auth-body"></div></div></div>
 <div class="modal-bg" id="modal-leaderboard"><div class="modal"><div class="modal-head"><div class="modal-title"><i class="fas fa-trophy"></i> Global Leaderboard</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div><div class="modal-body" id="lb-body"></div></div></div>
 <div class="modal-bg" id="modal-achievements"><div class="modal"><div class="modal-head"><div class="modal-title"><i class="fas fa-medal"></i> Achievements</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div><div class="modal-body" id="ach-body"></div></div></div>
 <div class="modal-bg" id="modal-settings"><div class="modal"><div class="modal-head"><div class="modal-title"><i class="fas fa-cog"></i> Settings</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div><div class="modal-body" id="settings-body"></div></div></div>
@@ -509,18 +511,11 @@ body::after {
 <div class="help-tip" id="help-tip"></div>
 
 <script>
-// =====================  SETUP =====================
-const _URL = 'https://mdeocobsqjhrztbgferz.supabase.co';
-const _ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kZW9jb2JzcWpocnp0YmdmZXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzNDk4NjYsImV4cCI6MjEwMTkyNTg2Nn0.jkNvTma-Xd7KbIxKOJKYUEa5HbPjNGbFgO8W3d_fUnM';
-let Client = null;
-let Ready = false;
-try {
-  if (typeof  !== 'undefined' && .createClient) {
-    Client = .createClient(_URL, _ANON_KEY);
-  }
-} catch (e) {
-  console.warn(' client init failed:', e);
-}
+// ===================== SUPABASE SETUP =====================
+const SUPABASE_URL = 'https://mdeocobsqjhrztbgferz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kZW9jb2JzcWpocnp0YmdmZXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzNDk4NjYsImV4cCI6MjEwMTkyNTg2Nn0.jkNvTma-Xd7KbIxKOJKYUEa5HbPjNGbFgO8W3d_fUnM';
+let supabaseClient = null;
+let supabaseReady = false;
 
 // ===================== GAME DATA =====================
 const BUILDINGS = {
@@ -697,17 +692,18 @@ const sndArcade   = () => [523, 587, 659, 698, 784, 880, 988, 1047].forEach((f, 
 
 // ===================== SAVE / LOAD =====================
 async function save() {
-  if (!game.settings.autoSave || !Ready) return;
+  if (!game.settings.autoSave || !supabaseReady) return;
   try {
     const saveData = JSON.parse(JSON.stringify(game));
     saveData.lastSave = Date.now();
-    await Client.rpc('save_game', { p_game_data: saveData });
+    await supabaseClient.rpc('save_game', { p_game_data: saveData });
     game.lastSave = Date.now();
   } catch (e) { console.error("Cloud save failed", e); }
 }
+
 async function load() {
   try {
-    const { data, error } = await Client.rpc('get_game');
+    const { data, error } = await supabaseClient.rpc('get_game');
     if (error || !data) { console.error('Load error:', error); return false; }
     const loaded = (typeof data === 'string') ? JSON.parse(data) : data;
     if (!loaded || typeof loaded !== 'object') return false;
@@ -737,13 +733,13 @@ async function load() {
     return true;
   } catch (e) { console.error("Load failed", e); return false; }
 }
+
 async function hardReset() {
-  try { if (Ready) await Client.rpc('delete_save'); } catch (e) { console.error('Reset error:', e); }
+  try { if (supabaseReady) await supabaseClient.rpc('delete_save'); } catch (e) { console.error('Reset error:', e); }
   game = createNewGame();
   renderAll();
   toast('Game Reset', 'Your empire has been wiped clean.', 'fa-trash', '#ef4458');
 }
-
 // ===================== PROMO CODES =====================
 function redeemCode() {
   const input = document.getElementById('promo-input');
@@ -1191,7 +1187,7 @@ function initFlappy(ctx, canvas) {
   document.getElementById('game-score').style.display = 'block';
   document.getElementById('game-score').textContent = '0';
 
-  function loop() {
+  function flappyLoop() {
     frame++;
     ctx.fillStyle = '#0d1322'; ctx.fillRect(0, 0, W, H);
     
@@ -1246,7 +1242,7 @@ function initFlappy(ctx, canvas) {
     
     if (bird.y > H - 10 || bird.y < 0) endGame(score);
     
-    if (currentGame === 'flappy') gameRAF = requestAnimationFrame(loop);
+    if (currentGame === 'flappy') gameRAF = requestAnimationFrame(flappyLoop);
   }
   loop();
 }
@@ -1341,7 +1337,7 @@ function initCatcher(ctx, canvas) {
   document.getElementById('game-score').style.display = 'block';
   document.getElementById('game-score').textContent = '0';
 
-  function loop() {
+  function catcherLoop() {
     frame++;
     ctx.fillStyle = '#0d1322'; ctx.fillRect(0, 0, W, H);
     
@@ -1387,7 +1383,7 @@ function initCatcher(ctx, canvas) {
     });
     objs = objs.filter(o => o.y < H + 50);
     
-    if (currentGame === 'catcher') gameRAF = requestAnimationFrame(loop);
+    if (currentGame === 'catcher') gameRAF = requestAnimationFrame(catcherLoop);
   }
   loop();
 }
@@ -1599,7 +1595,6 @@ function renderSettings() {
   const el = document.getElementById('settings-body');
   const isLoggedIn = !!currentSession;
   const userEmail = currentSession?.user?.email || '';
-
   el.innerHTML = `
     <div class="setting-group">
       <h4>Account</h4>
@@ -1681,28 +1676,24 @@ function openModal(id) { document.getElementById(id).classList.add('show'); }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
 // ===================== GAME LOOP =====================
-let lastFrame = Date.now();
-let uiCounter = 0;
-let lastFrame = Date.now();
-let uiCounter = 0;
 function gameLoop() {
   requestAnimationFrame(gameLoop);
   try {
     const now = Date.now(); const dt = (now - lastFrame) / 1000; lastFrame = now;
-    const inc = getIncome() * dt;
-    if (inc > 0) { game.money += inc; game.totalEarned += inc; }
-    if (game.autoTapper > 0) {
-      const autoEarn = game.clickPower * game.prestige.multiplier * (1 + game.discovered.length * 0.02) * game.autoTapper * dt;
-      game.money += autoEarn; game.totalEarned += autoEarn;
-    }
-    if (now - game.lastAI > 1000) { updateAI((now - game.lastAI) / 1000); game.lastAI = now; }
-    if (now - (game.lastBoostCheck || 0) > 5000) { maybeTriggerBoost(); game.lastBoostCheck = now; }
-    updateBoostIndicator(); updateHUD();
-    uiCounter++;
-    if (uiCounter % 30 === 0) { renderShop(); renderClicker(); renderExpand(); renderDaily(); }
-    if (uiCounter % 60 === 0) renderHistory();
-    if (game.settings.autoSave && now - game.lastSave > 15000) { save(); game.lastSave = now; }
-    if (now - (game.lastAchCheck || 0) > 1000) { checkAchievements(); game.lastAchCheck = now; }
+  const inc = getIncome() * dt;
+  if (inc > 0) { game.money += inc; game.totalEarned += inc; }
+  if (game.autoTapper > 0) {
+    const autoEarn = game.clickPower * game.prestige.multiplier * (1 + game.discovered.length * 0.02) * game.autoTapper * dt;
+    game.money += autoEarn; game.totalEarned += autoEarn;
+  }
+  if (now - game.lastAI > 1000) { updateAI((now - game.lastAI) / 1000); game.lastAI = now; }
+  if (now - (game.lastBoostCheck || 0) > 5000) { maybeTriggerBoost(); game.lastBoostCheck = now; }
+  updateBoostIndicator(); updateHUD();
+  uiCounter++;
+  if (uiCounter % 30 === 0) { renderShop(); renderClicker(); renderExpand(); renderDaily(); }
+  if (uiCounter % 60 === 0) renderHistory();
+  if (game.settings.autoSave && now - game.lastSave > 15000) { save(); game.lastSave = now; }
+  if (now - (game.lastAchCheck || 0) > 1000) { checkAchievements(); game.lastAchCheck = now; }
   } catch (e) { console.error('Game loop error:', e); }
 }
 
@@ -1718,12 +1709,17 @@ function spawnFloatingSymbols() {
   }
 }
 
-// ===================== INIT =====================
-
 // ===================== AUTH SYSTEM =====================
 let currentSession = null;
 
-function showAuthModal(mode = 'login') {
+function hideLoadingScreen() {
+  const ls = document.getElementById('loading-screen');
+  if (!ls) return;
+  ls.classList.add('fade-out');
+  setTimeout(() => { ls.style.display = 'none'; }, 600);
+}
+
+function showAuthModal(mode) {
   const el = document.getElementById('auth-body');
   el.innerHTML = `
     <div class="auth-tabs">
@@ -1739,6 +1735,7 @@ function showAuthModal(mode = 'login') {
       <button class="auth-btn" id="auth-login-btn"><i class="fas fa-right-to-bracket"></i> Sign In</button>
       <div class="auth-divider">or</div>
       <button class="auth-btn secondary" id="auth-guest-btn"><i class="fas fa-user-secret"></i> Continue as Guest</button>
+      <button class="auth-btn secondary" id="auth-offline-btn" style="margin-top:4px;"><i class="fas fa-wifi"></i> Play Offline</button>
     </div>
     <div class="auth-form ${mode === 'register' ? 'active' : ''}" id="auth-register">
       <label class="auth-label">Email</label>
@@ -1750,9 +1747,8 @@ function showAuthModal(mode = 'login') {
       <div class="auth-error" id="auth-reg-error"></div>
       <button class="auth-btn" id="auth-reg-btn"><i class="fas fa-user-plus"></i> Create Account</button>
     </div>
-    <div class="auth-info">Guest accounts save locally only. Registered accounts sync to the cloud.</div>
+    <div class="auth-info">Guest accounts save to cloud anonymously. Registered accounts use email.</div>
   `;
-
   el.querySelectorAll('.auth-tab').forEach(t => {
     t.addEventListener('click', () => {
       const tab = t.dataset.authTab;
@@ -1760,38 +1756,28 @@ function showAuthModal(mode = 'login') {
       el.querySelectorAll('.auth-form').forEach(x => x.classList.toggle('active', x.id === 'auth-' + tab));
     });
   });
-
-  const loginBtn = el.querySelector('#auth-login-btn');
-  if (loginBtn) loginBtn.addEventListener('click', doSignIn);
-
-  const regBtn = el.querySelector('#auth-reg-btn');
-  if (regBtn) regBtn.addEventListener('click', doSignUp);
-
-  const guestBtn = el.querySelector('#auth-guest-btn');
-  if (guestBtn) guestBtn.addEventListener('click', doGuestSignIn);
-
-  // Enter key support
+  el.querySelector('#auth-login-btn')?.addEventListener('click', doSignIn);
+  el.querySelector('#auth-reg-btn')?.addEventListener('click', doSignUp);
+  el.querySelector('#auth-guest-btn')?.addEventListener('click', doGuestSignIn);
+  el.querySelector('#auth-offline-btn')?.addEventListener('click', () => { closeModal('modal-auth'); toast('Offline Mode', 'Playing without cloud sync.', 'fa-wifi', '#ef4458'); });
   el.querySelectorAll('input').forEach(inp => {
     inp.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
         const form = inp.closest('.auth-form');
-        if (form.id === 'auth-login') doSignIn();
-        else if (form.id === 'auth-register') doSignUp();
+        if (form?.id === 'auth-login') doSignIn();
+        else if (form?.id === 'auth-register') doSignUp();
       }
     });
   });
-
   openModal('modal-auth');
 }
 
 async function doSignIn() {
-  const email = document.getElementById('auth-email').value.trim();
-  const password = document.getElementById('auth-password').value;
+  const email = document.getElementById('auth-email')?.value.trim();
+  const password = document.getElementById('auth-password')?.value;
   const errEl = document.getElementById('auth-login-error');
   const btn = document.getElementById('auth-login-btn');
-
-  if (!email || !password) { errEl.textContent = 'Please enter email and password.'; return; }
-
+  if (!email || !password) { if (errEl) errEl.textContent = 'Please enter email and password.'; return; }
   btn.disabled = true; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Signing in...';
   try {
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
@@ -1802,22 +1788,20 @@ async function doSignIn() {
     await loadGameFromCloud();
     toast('Welcome back!', 'Signed in successfully.', 'fa-user-check', '#10d981');
   } catch (e) {
-    errEl.textContent = e.message || 'Sign in failed.';
+    if (errEl) errEl.textContent = e.message || 'Sign in failed.';
     btn.disabled = false; btn.innerHTML = '<i class="fas fa-right-to-bracket"></i> Sign In';
   }
 }
 
 async function doSignUp() {
-  const email = document.getElementById('reg-email').value.trim();
-  const password = document.getElementById('reg-password').value;
-  const confirm = document.getElementById('reg-confirm').value;
+  const email = document.getElementById('reg-email')?.value.trim();
+  const password = document.getElementById('reg-password')?.value;
+  const confirm = document.getElementById('reg-confirm')?.value;
   const errEl = document.getElementById('auth-reg-error');
   const btn = document.getElementById('auth-reg-btn');
-
-  if (!email || !password) { errEl.textContent = 'Please fill in all fields.'; return; }
-  if (password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
-  if (password !== confirm) { errEl.textContent = 'Passwords do not match.'; return; }
-
+  if (!email || !password) { if (errEl) errEl.textContent = 'Please fill in all fields.'; return; }
+  if (password.length < 6) { if (errEl) errEl.textContent = 'Password must be at least 6 characters.'; return; }
+  if (password !== confirm) { if (errEl) errEl.textContent = 'Passwords do not match.'; return; }
   btn.disabled = true; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Creating...';
   try {
     const { data, error } = await supabaseClient.auth.signUp({ email, password });
@@ -1828,7 +1812,7 @@ async function doSignUp() {
     toast('Account Created!', 'Welcome to Capital Empire.', 'fa-user-plus', '#10d981');
     await loadGameFromCloud();
   } catch (e) {
-    errEl.textContent = e.message || 'Registration failed.';
+    if (errEl) errEl.textContent = e.message || 'Registration failed.';
     btn.disabled = false; btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
   }
 }
@@ -1845,17 +1829,14 @@ async function doGuestSignIn() {
     await loadGameFromCloud();
     toast('Guest Mode', 'Playing with cloud sync enabled.', 'fa-user-secret', '#f5c451');
   } catch (e) {
-    // Fallback to pure offline
     supabaseReady = false;
     closeModal('modal-auth');
-    toast('Offline Mode', 'Could not connect. Progress saves locally only.', 'fa-wifi', '#ef4458');
+    toast('Offline Mode', 'Could not connect. Progress is local only.', 'fa-wifi', '#ef4458');
   }
 }
 
 async function doSignOut() {
-  try {
-    await supabaseClient.auth.signOut();
-  } catch (e) {}
+  try { await supabaseClient.auth.signOut(); } catch (e) {}
   currentSession = null;
   supabaseReady = false;
   game = createNewGame();
@@ -1877,75 +1858,74 @@ async function loadGameFromCloud() {
     setTimeout(() => toast('Offline Mode', 'Playing with local progress.', 'fa-wifi', '#ef4458'), 500);
   }
 }
-
-function hideLoadingScreen() {
-  const loadingScreen = document.getElementById('loading-screen');
-  if (!loadingScreen) return;
-  loadingScreen.classList.add('fade-out');
-  setTimeout(() => { loadingScreen.style.display = 'none'; }, 500);
-}
-
+// ===================== INIT =====================
 async function init() {
   const loadingScreen = document.getElementById('loading-screen');
   const loadingError = document.getElementById('loading-error');
+  const skipBtn = document.getElementById('loading-skip');
 
-  // ABSOLUTE FAILSAFE: hide loading screen after 5 seconds no matter what
+  // ALWAYS hide loading screen after 2 seconds — no exceptions
   setTimeout(() => {
     hideLoadingScreen();
-    if (!document.querySelector('.modal-bg.show')) {
-      // If nothing happened, show a toast
-      toast('Ready', 'Capital Empire is loaded.', 'fa-check', '#10d981');
-    }
-  }, 5000);
+    if (skipBtn) skipBtn.style.display = 'none';
+  }, 2000);
 
+  // Show skip button after 1 second
+  setTimeout(() => {
+    if (skipBtn) {
+      skipBtn.style.display = 'inline-block';
+      skipBtn.onclick = () => {
+        hideLoadingScreen();
+        skipBtn.style.display = 'none';
+        toast('Offline Mode', 'Skipped connection. Playing locally.', 'fa-forward', '#9ca3af');
+      };
+    }
+  }, 1000);
+
+  // Initialize Supabase client safely
   try {
-    // Check if Supabase library loaded
-    if (!supabaseClient) {
-      console.warn('Supabase library not loaded');
-      loadingError.textContent = 'Network issue: Supabase library failed to load. Playing in offline mode.';
-      loadingError.style.display = 'block';
-      await new Promise(r => setTimeout(r, 1500));
-      hideLoadingScreen();
-      setTimeout(() => toast('Offline Mode', 'Supabase not available. Progress is local only.', 'fa-wifi', '#ef4458'), 600);
-      renderAll(); spawnFloatingSymbols();
-      setupEventListeners();
-      lastFrame = Date.now(); requestAnimationFrame(gameLoop);
-      return;
+    if (typeof supabase !== 'undefined' && supabase.createClient) {
+      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
-
-    // Check for existing session
-    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
-    if (sessionError) console.warn('Session check error:', sessionError);
-
-    if (sessionData?.session) {
-      currentSession = sessionData.session;
-      supabaseReady = true;
-      hideLoadingScreen();
-      await loadGameFromCloud();
-    } else {
-      // No session — show auth modal
-      hideLoadingScreen();
-      showAuthModal('login');
-    }
-
-    // Listen for auth changes
-    if (supabaseClient) supabaseClient.auth.onAuthStateChange((event, session) => {
-      currentSession = session;
-      supabaseReady = !!session;
-      if (event === 'SIGNED_IN') {
-        toast('Connected', 'Cloud sync is now active.', 'fa-cloud', '#10d981');
-      } else if (event === 'SIGNED_OUT') {
-        supabaseReady = false;
-      }
-    });
-
   } catch (e) {
-    console.error('Init error:', e);
-    loadingError.textContent = 'Something went wrong during startup. Playing in offline mode.';
-    loadingError.style.display = 'block';
-    await new Promise(r => setTimeout(r, 1500));
-    hideLoadingScreen();
-    setTimeout(() => toast('Offline Mode', 'Connection failed. Progress is local only.', 'fa-wifi', '#ef4458'), 600);
+    console.warn('Supabase init failed:', e);
+  }
+
+  // If Supabase loaded, try to restore session
+  if (supabaseClient) {
+    try {
+      const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+      if (sessionError) console.warn('Session error:', sessionError);
+
+      if (sessionData?.session) {
+        currentSession = sessionData.session;
+        supabaseReady = true;
+        await loadGameFromCloud();
+      } else {
+        // No session — show auth modal after loading screen fades
+        setTimeout(() => showAuthModal('login'), 2200);
+      }
+
+      // Listen for auth state changes
+      supabaseClient.auth.onAuthStateChange((event, session) => {
+        currentSession = session;
+        supabaseReady = !!session;
+        if (event === 'SIGNED_IN') toast('Connected', 'Cloud sync is now active.', 'fa-cloud', '#10d981');
+        else if (event === 'SIGNED_OUT') supabaseReady = false;
+      });
+    } catch (e) {
+      console.error('Auth init error:', e);
+      if (loadingError) {
+        loadingError.textContent = 'Connection issue. You can play offline or try signing in later from Settings.';
+        loadingError.style.display = 'block';
+      }
+      setTimeout(() => showAuthModal('login'), 2200);
+    }
+  } else {
+    if (loadingError) {
+      loadingError.textContent = 'Supabase library failed to load. Check your internet connection.';
+      loadingError.style.display = 'block';
+    }
   }
 
   renderAll(); spawnFloatingSymbols();
@@ -1968,14 +1948,12 @@ function setupEventListeners() {
 
   document.getElementById('crate-list').addEventListener('click', (e) => {
     const crateEl = e.target.closest('.crate');
-    if (crateEl && !crateEl.classList.contains('disabled')) {
-      buyCrate(crateEl.dataset.crate);
-    }
+    if (crateEl && !crateEl.classList.contains('disabled')) buyCrate(crateEl.dataset.crate);
   });
 
   document.getElementById('inv-list').addEventListener('click', (e) => {
     const itemEl = e.target.closest('.inv-item');
-    if (itemEl) { startPlacing(itemEl.dataset.id); }
+    if (itemEl) startPlacing(itemEl.dataset.id);
   });
 
   document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
@@ -1990,11 +1968,7 @@ function setupEventListeners() {
     b.addEventListener('click', e => {
       const modal = e.target.closest('.modal-bg');
       modal.classList.remove('show');
-      if (modal.id === 'modal-game') {
-        stopGameLoop();
-        currentGame = null;
-        document.onkeydown = null;
-      }
+      if (modal.id === 'modal-game') { stopGameLoop(); currentGame = null; document.onkeydown = null; }
       crateAnimating = false;
     });
   });
@@ -2003,11 +1977,7 @@ function setupEventListeners() {
     bg.addEventListener('click', e => { 
       if (e.target === bg) {
         bg.classList.remove('show');
-        if (bg.id === 'modal-game') {
-          stopGameLoop();
-          currentGame = null;
-          document.onkeydown = null;
-        }
+        if (bg.id === 'modal-game') { stopGameLoop(); currentGame = null; document.onkeydown = null; }
       }
     });
   });
@@ -2016,26 +1986,23 @@ function setupEventListeners() {
     if (e.key === 'Escape') { 
       document.querySelectorAll('.modal-bg.show').forEach(m => {
         m.classList.remove('show');
-        if (m.id === 'modal-game') {
-          stopGameLoop();
-          currentGame = null;
-          document.onkeydown = null;
-        }
+        if (m.id === 'modal-game') { stopGameLoop(); currentGame = null; document.onkeydown = null; }
       });
       if (placingId) cancelPlacing(); 
     }
     if (e.key === ' ' && !e.target.matches('input,select,textarea') && !document.getElementById('modal-game').classList.contains('show')) { 
-      e.preventDefault(); 
-      document.getElementById('click-btn').click(); 
+      e.preventDefault(); document.getElementById('click-btn').click(); 
     }
   });
 
   const tip = document.getElementById('help-tip');
   document.addEventListener('mouseover', e => {
-    const target = e.target.closest('[data-tip]'); if (target) {
+    const target = e.target.closest('[data-tip]');
+    if (target) {
       const [name, desc] = target.dataset.tip.split('|');
       tip.innerHTML = `<b>${name}</b>${desc}`;
-      const r = target.getBoundingClientRect(); tip.style.left = r.left + 'px'; tip.style.top = (r.bottom + 6) + 'px'; tip.classList.add('show');
+      const r = target.getBoundingClientRect();
+      tip.style.left = r.left + 'px'; tip.style.top = (r.bottom + 6) + 'px'; tip.classList.add('show');
     }
   });
   document.addEventListener('mouseout', e => { if (e.target.closest('[data-tip]')) tip.classList.remove('show'); });
@@ -2047,8 +2014,6 @@ function setupEventListeners() {
   window.redeemCode = redeemCode;
   window.startGame = startGame;
 }
-
-
 init();
 </script>
 </body>
