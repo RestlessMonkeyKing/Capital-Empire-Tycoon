@@ -509,17 +509,17 @@ body::after {
 <div class="help-tip" id="help-tip"></div>
 
 <script>
-// ===================== SUPABASE SETUP =====================
-const SUPABASE_URL = 'https://mdeocobsqjhrztbgferz.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kZW9jb2JzcWpocnp0YmdmZXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzNDk4NjYsImV4cCI6MjEwMTkyNTg2Nn0.jkNvTma-Xd7KbIxKOJKYUEa5HbPjNGbFgO8W3d_fUnM';
-let supabaseClient = null;
-let supabaseReady = false;
+// =====================  SETUP =====================
+const _URL = 'https://mdeocobsqjhrztbgferz.supabase.co';
+const _ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kZW9jb2JzcWpocnp0YmdmZXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzNDk4NjYsImV4cCI6MjEwMTkyNTg2Nn0.jkNvTma-Xd7KbIxKOJKYUEa5HbPjNGbFgO8W3d_fUnM';
+let Client = null;
+let Ready = false;
 try {
-  if (typeof supabase !== 'undefined' && supabase.createClient) {
-    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  if (typeof  !== 'undefined' && .createClient) {
+    Client = .createClient(_URL, _ANON_KEY);
   }
 } catch (e) {
-  console.warn('Supabase client init failed:', e);
+  console.warn(' client init failed:', e);
 }
 
 // ===================== GAME DATA =====================
@@ -697,17 +697,17 @@ const sndArcade   = () => [523, 587, 659, 698, 784, 880, 988, 1047].forEach((f, 
 
 // ===================== SAVE / LOAD =====================
 async function save() {
-  if (!game.settings.autoSave || !supabaseReady) return;
+  if (!game.settings.autoSave || !Ready) return;
   try {
     const saveData = JSON.parse(JSON.stringify(game));
     saveData.lastSave = Date.now();
-    await supabaseClient.rpc('save_game', { p_game_data: saveData });
+    await Client.rpc('save_game', { p_game_data: saveData });
     game.lastSave = Date.now();
   } catch (e) { console.error("Cloud save failed", e); }
 }
 async function load() {
   try {
-    const { data, error } = await supabaseClient.rpc('get_game');
+    const { data, error } = await Client.rpc('get_game');
     if (error || !data) { console.error('Load error:', error); return false; }
     const loaded = (typeof data === 'string') ? JSON.parse(data) : data;
     if (!loaded || typeof loaded !== 'object') return false;
@@ -738,7 +738,7 @@ async function load() {
   } catch (e) { console.error("Load failed", e); return false; }
 }
 async function hardReset() {
-  try { if (supabaseReady) await supabaseClient.rpc('delete_save'); } catch (e) { console.error('Reset error:', e); }
+  try { if (Ready) await Client.rpc('delete_save'); } catch (e) { console.error('Reset error:', e); }
   game = createNewGame();
   renderAll();
   toast('Game Reset', 'Your empire has been wiped clean.', 'fa-trash', '#ef4458');
