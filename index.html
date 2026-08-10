@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 :root {
   --bg: #050810; --bg-2: #0a0f1c; --card: #111729; --card-2: #1a2138; --card-3: #232c48;
@@ -39,6 +40,7 @@ body::after {
 }
 .floating-symbol { position: fixed; font-family: 'Outfit', sans-serif; font-weight: 900; color: rgba(245,196,81,0.035); pointer-events: none; z-index: -1; animation: floatSym linear infinite; user-select: none; }
 @keyframes floatSym { from { transform: translateY(110vh) rotate(0deg); } to { transform: translateY(-20vh) rotate(360deg); } }
+#loading-screen.fade-out { opacity: 0; pointer-events: none; }
 ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; } ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
 .game { display: grid; grid-template-rows: auto 1fr; height: 100vh; max-width: 1600px; margin: 0 auto; padding: 12px; gap: 10px; }
@@ -335,8 +337,15 @@ body::after {
   .game { padding: 8px; gap: 8px; } .hud { grid-template-columns: 1fr; gap: 8px; padding: 8px 14px; } .hud-stats { gap: 16px; } .stat-money .stat-value { font-size: 20px; } .stat-value { font-size: 18px; } .grid-cell { width: 68px; height: 68px; } .brand-text { font-size: 14px; } .toasts { right: 8px; left: 8px; max-width: none; } .toast { min-width: 0; } .modal { max-height: 90vh; }
 }
 </style>
+<base target="_blank">
 </head>
 <body>
+
+<div id="loading-screen" style="position:fixed;inset:0;background:var(--bg);z-index:5000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:opacity .5s;">
+  <div style="width:60px;height:60px;border-radius:16px;background:linear-gradient(135deg,var(--gold-3),var(--gold),var(--gold-2));display:grid;place-items:center;font-family:'Outfit',sans-serif;font-weight:900;color:#1a1408;font-size:28px;box-shadow:0 4px 30px rgba(245,196,81,0.4);animation:pulse 1.5s ease-in-out infinite;">C</div>
+  <div style="font-family:'Outfit',sans-serif;font-weight:700;color:var(--fg);font-size:16px;">Connecting to Capital Empire...</div>
+  <div id="loading-error" style="color:var(--crimson);font-size:12px;display:none;max-width:300px;text-align:center;"></div>
+</div>
 
 <div class="game">
   <header class="hud">
@@ -474,6 +483,12 @@ body::after {
 <div class="help-tip" id="help-tip"></div>
 
 <script>
+// ===================== SUPABASE SETUP =====================
+const SUPABASE_URL = 'https://mdeocobsqjhrztbgferz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kZW9jb2JzcWpocnp0YmdmZXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzNDk4NjYsImV4cCI6MjEwMTkyNTg2Nn0.jkNvTma-Xd7KbIxKOJKYUEa5HbPjNGbFgO8W3d_fUnM';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let supabaseReady = false;
+
 // ===================== GAME DATA =====================
 const BUILDINGS = {
   atm:       { name: 'ATM Kiosk',           icon: 'fa-credit-card',          rarity: 'common',     income: 0.5 },
@@ -557,7 +572,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 // ===================== GAME STATE =====================
 let game = createNewGame();
-const SAVE_KEY = 'capital_empire_save_v6';
 
 function createNewGame() {
   return {
@@ -572,6 +586,7 @@ function createNewGame() {
     boost: { value: 1, endTime: 0 },
     daily: { lastClaim: 0, streak: 0 },
     prestige: { points: 0, multiplier: 1 },
+    playerName: 'Tycoon',
     lastTick: Date.now(), lastSave: Date.now(), lastAI: Date.now(), lastBoost: Date.now(), lastAuto: Date.now(),
   };
 }
@@ -648,35 +663,37 @@ const sndCode     = () => [784, 1047, 1319, 1568, 2093].forEach((f, i) => playTo
 const sndArcade   = () => [523, 587, 659, 698, 784, 880, 988, 1047].forEach((f, i) => playTone(f, 0.1, 'square', 0.04, i * 0.05));
 
 // ===================== SAVE / LOAD =====================
-function save() {
+async function save() {
+  if (!game.settings.autoSave || !supabaseReady) return;
   try {
     const saveData = JSON.parse(JSON.stringify(game));
     saveData.lastSave = Date.now();
-    localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
-  } catch (e) { console.error("Save failed", e); }
+    await supabaseClient.rpc('save_game', { p_game_data: saveData });
+    game.lastSave = Date.now();
+  } catch (e) { console.error("Cloud save failed", e); }
 }
-function load() {
+async function load() {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return false;
-    const data = JSON.parse(raw);
-    if (!data || typeof data !== 'object') return false;
+    const { data, error } = await supabaseClient.rpc('get_game');
+    if (error || !data) { console.error('Load error:', error); return false; }
+    const loaded = (typeof data === 'string') ? JSON.parse(data) : data;
+    if (!loaded || typeof loaded !== 'object') return false;
     const def = createNewGame();
-    game = Object.assign(def, data);
-    game.settings = Object.assign(def.settings, data.settings || {});
-    game.stats = Object.assign(def.stats, data.stats || {});
-    game.boost = Object.assign(def.boost, data.boost || {});
-    game.daily = Object.assign(def.daily, data.daily || {});
-    game.prestige = Object.assign(def.prestige, data.prestige || {});
-    game.arcade = Object.assign(def.arcade, data.arcade || {});
+    game = Object.assign(def, loaded);
+    game.settings = Object.assign(def.settings, loaded.settings || {});
+    game.stats = Object.assign(def.stats, loaded.stats || {});
+    game.boost = Object.assign(def.boost, loaded.boost || {});
+    game.daily = Object.assign(def.daily, loaded.daily || {});
+    game.prestige = Object.assign(def.prestige, loaded.prestige || {});
+    game.arcade = Object.assign(def.arcade, loaded.arcade || {});
     if (!Array.isArray(game.pullHistory)) game.pullHistory = [];
     if (!Array.isArray(game.inventory)) game.inventory = [];
     if (!Array.isArray(game.discovered)) game.discovered = [];
     if (!Array.isArray(game.redeemedCodes)) game.redeemedCodes = [];
     if (!Array.isArray(game.ai)) game.ai = JSON.parse(JSON.stringify(AI_COMPETITORS));
     game.grid = game.grid.map(c => { if (c === null) return null; if (typeof c === 'string') return { id: c, level: 1 }; return c; });
-    
-    const offline = Math.min((Date.now() - (data.lastSave || Date.now())) / 1000, 3600 * 8);
+    if (!game.playerName) game.playerName = 'Tycoon';
+    const offline = Math.min((Date.now() - (loaded.lastSave || Date.now())) / 1000, 3600 * 8);
     const inc = getIncome() * offline;
     if (inc > 0) {
       game.money += inc; game.totalEarned += inc;
@@ -687,7 +704,12 @@ function load() {
     return true;
   } catch (e) { console.error("Load failed", e); return false; }
 }
-function hardReset() { localStorage.removeItem(SAVE_KEY); game = createNewGame(); renderAll(); toast('Game Reset', 'Your empire has been wiped clean.', 'fa-trash', '#ef4458'); }
+async function hardReset() {
+  try { if (supabaseReady) await supabaseClient.rpc('delete_save'); } catch (e) { console.error('Reset error:', e); }
+  game = createNewGame();
+  renderAll();
+  toast('Game Reset', 'Your empire has been wiped clean.', 'fa-trash', '#ef4458');
+}
 
 // ===================== PROMO CODES =====================
 function redeemCode() {
@@ -1484,25 +1506,35 @@ function renderDaily() {
     reward.textContent = money(getNextDailyReward());
   }
 }
-function renderLeaderboard() {
+async function renderLeaderboard() {
   const el = document.getElementById('lb-body');
-  const player = { name: 'You (Player)', money: game.totalEarned, color: '#f5c451', isPlayer: true };
-  const all = [...game.ai.map(a => ({...a, isPlayer: false})), player];
-  all.sort((a, b) => b.money - a.money);
-  const max = all[0].money;
-  el.innerHTML = all.map((p, i) => {
-    const rank = i + 1; const pct = Math.max(2, (p.money / max) * 100);
-    return `
-      <div class="lb-entry ${p.isPlayer ? 'you' : ''} ${rank <= 3 ? 'top-' + rank : ''}" style="--ac:${p.color}">
-        <div class="lb-rank">${rank}</div>
-        <div class="lb-avatar">${p.name.charAt(0)}</div>
-        <div class="lb-info">
-          <div class="lb-name">${p.name}${p.isPlayer ? '<span class="you-tag">YOU</span>' : ''}</div>
-          <div class="lb-bar"><div class="lb-bar-fill" style="width:${pct}%"></div></div>
-        </div>
-        <div class="lb-money">${money(p.money)}</div>
-      </div>`;
-  }).join('');
+  el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px 20px;"><i class="fas fa-circle-notch fa-spin" style="font-size:24px;margin-bottom:10px;display:block;opacity:0.5;"></i>Loading global rankings...</div>';
+  try {
+    const { data: lbData, error } = await supabaseClient.rpc('get_leaderboard', { p_limit: 50 });
+    if (error) throw error;
+    const player = { name: game.playerName || 'You', money: game.totalEarned, color: '#f5c451', isPlayer: true };
+    const ai = JSON.parse(JSON.stringify(AI_COMPETITORS));
+    const dbPlayers = (lbData || []).map(d => ({ name: d.player_name || 'Tycoon', money: Number(d.total_earned) || 0, color: '#38bdf8', isPlayer: false }));
+    const all = [...ai, ...dbPlayers, player];
+    all.sort((a, b) => b.money - a.money);
+    const max = Math.max(...all.map(x => x.money), 1);
+    el.innerHTML = all.map((p, i) => {
+      const rank = i + 1;
+      const pct = Math.max(2, (p.money / max) * 100);
+      return `
+        <div class="lb-entry ${p.isPlayer ? 'you' : ''} ${rank <= 3 ? 'top-' + rank : ''}" style="--ac:${p.color}">
+          <div class="lb-rank">${rank}</div>
+          <div class="lb-avatar">${p.name.charAt(0)}</div>
+          <div class="lb-info">
+            <div class="lb-name">${p.name}${p.isPlayer ? '<span class="you-tag">YOU</span>' : ''}</div>
+            <div class="lb-bar"><div class="lb-bar-fill" style="width:${pct}%"></div></div>
+          </div>
+          <div class="lb-money">${money(p.money)}</div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    el.innerHTML = `<div style="text-align:center;color:var(--muted);padding:30px 20px;"><i class="fas fa-triangle-exclamation" style="font-size:24px;margin-bottom:10px;display:block;opacity:0.5;"></i>Leaderboard unavailable.<br><span style="font-size:11px;">${e.message || 'Connection error'}</span></div>`;
+  }
 }
 function renderAchievements() {
   const el = document.getElementById('ach-body');
@@ -1534,6 +1566,14 @@ function renderSettings() {
   const el = document.getElementById('settings-body');
   el.innerHTML = `
     <div class="setting-group">
+      <h4>Identity</h4>
+      <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+        <div class="setting-label">Tycoon Name</div>
+        <input type="text" id="player-name-input" value="${game.playerName || 'Tycoon'}" maxlength="16" style="background:var(--card);border:1px solid var(--border);color:var(--fg);padding:8px 11px;border-radius:8px;font-family:inherit;font-size:12px;outline:none;" />
+        <div class="setting-desc">This appears on the global leaderboard.</div>
+      </div>
+    </div>
+    <div class="setting-group">
       <h4>Promo Codes</h4>
       <div class="setting-row" style="flex-direction:column; align-items:stretch; gap:8px;">
         <div class="setting-label">Redeem Code</div>
@@ -1548,7 +1588,7 @@ function renderSettings() {
       <h4>Gameplay</h4>
       <div class="setting-row"><div><div class="setting-label">Sound Effects</div><div class="setting-desc">Clicks, reveals, and other sounds.</div></div><div class="toggle ${game.settings.sound ? 'on' : ''}" data-toggle="sound"></div></div>
       <div class="setting-row"><div><div class="setting-label">Number Notation</div><div class="setting-desc">Compact (1.5M) or full (1,500,000).</div></div><select class="setting-select" data-setting="notation"><option value="short" ${game.settings.notation === 'short' ? 'selected' : ''}>Compact</option><option value="full" ${game.settings.notation === 'full' ? 'selected' : ''}>Full Numbers</option></select></div>
-      <div class="setting-row"><div><div class="setting-label">Auto-Save</div><div class="setting-desc">Save progress automatically.</div></div><div class="toggle ${game.settings.autoSave ? 'on' : ''}" data-toggle="autoSave"></div></div>
+      <div class="setting-row"><div><div class="setting-label">Auto-Save</div><div class="setting-desc">Sync progress to cloud automatically.</div></div><div class="toggle ${game.settings.autoSave ? 'on' : ''}" data-toggle="autoSave"></div></div>
     </div>
     <div class="setting-group">
       <h4>Statistics</h4>
@@ -1564,14 +1604,22 @@ function renderSettings() {
     </div>
     <div class="setting-group">
       <h4>Save Data</h4>
-      <button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:6px;justify-content:center" id="manual-save"><i class="fas fa-floppy-disk"></i> Save Now</button>
+      <button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:6px;justify-content:center" id="manual-save"><i class="fas fa-floppy-disk"></i> Save to Cloud</button>
       <button class="danger-btn" id="reset-game"><i class="fas fa-trash"></i> Reset Game (Permanent)</button>
     </div>`;
+  const nameInput = el.querySelector('#player-name-input');
+  if (nameInput) {
+    nameInput.addEventListener('change', () => { game.playerName = nameInput.value.trim() || 'Tycoon'; save(); });
+  }
   el.querySelectorAll('[data-toggle]').forEach(t => { t.onclick = () => { const k = t.dataset.toggle; game.settings[k] = !game.settings[k]; t.classList.toggle('on'); if (game.settings.sound) sndClick(); }; });
   el.querySelectorAll('[data-setting]').forEach(s => { s.onchange = () => { game.settings[s.dataset.setting] = s.value; updateHUD(); renderShop(); renderInventory(); renderHistory(); }; });
-  el.querySelector('#manual-save').onclick = () => { save(); toast('Game Saved', 'Progress saved successfully.', 'fa-floppy-disk', '#10d981'); };
+  el.querySelector('#manual-save').onclick = async () => { 
+    if (!supabaseReady) { toast('Offline Mode', 'Cannot save — not connected to servers.', 'fa-wifi', '#ef4458'); return; }
+    await save(); 
+    toast('Game Saved', 'Progress synced to cloud.', 'fa-cloud', '#10d981'); 
+  };
   el.querySelector('#open-prestige').onclick = openPrestige;
-  el.querySelector('#reset-game').onclick = () => { if (confirm('Are you absolutely sure? This will permanently erase your entire empire.')) { hardReset(); closeModal('modal-settings'); } };
+  el.querySelector('#reset-game').onclick = () => { if (confirm('Are you absolutely sure? This will permanently erase your entire empire from the cloud.')) { hardReset(); closeModal('modal-settings'); } };
 }
 function renderAll() {
   updateHUD(); renderClicker(); renderQStats(); renderAchMini(); renderGrid(); renderExpand(); renderShop(); renderInventory(); renderHistory(); renderDaily(); updateInvBadge(); updateBoostIndicator();
@@ -1590,23 +1638,27 @@ function closeModal(id) { document.getElementById(id).classList.remove('show'); 
 // ===================== GAME LOOP =====================
 let lastFrame = Date.now();
 let uiCounter = 0;
+let lastFrame = Date.now();
+let uiCounter = 0;
 function gameLoop() {
-  const now = Date.now(); const dt = (now - lastFrame) / 1000; lastFrame = now;
-  const inc = getIncome() * dt;
-  if (inc > 0) { game.money += inc; game.totalEarned += inc; }
-  if (game.autoTapper > 0) {
-    const autoEarn = game.clickPower * game.prestige.multiplier * (1 + game.discovered.length * 0.02) * game.autoTapper * dt;
-    game.money += autoEarn; game.totalEarned += autoEarn;
-  }
-  if (now - game.lastAI > 1000) { updateAI((now - game.lastAI) / 1000); game.lastAI = now; }
-  if (now - (game.lastBoostCheck || 0) > 5000) { maybeTriggerBoost(); game.lastBoostCheck = now; }
-  updateBoostIndicator(); updateHUD();
-  uiCounter++;
-  if (uiCounter % 30 === 0) { renderShop(); renderClicker(); renderExpand(); renderDaily(); }
-  if (uiCounter % 60 === 0) renderHistory();
-  if (game.settings.autoSave && now - game.lastSave > 15000) { save(); game.lastSave = now; }
-  if (now - (game.lastAchCheck || 0) > 1000) { checkAchievements(); game.lastAchCheck = now; }
   requestAnimationFrame(gameLoop);
+  try {
+    const now = Date.now(); const dt = (now - lastFrame) / 1000; lastFrame = now;
+    const inc = getIncome() * dt;
+    if (inc > 0) { game.money += inc; game.totalEarned += inc; }
+    if (game.autoTapper > 0) {
+      const autoEarn = game.clickPower * game.prestige.multiplier * (1 + game.discovered.length * 0.02) * game.autoTapper * dt;
+      game.money += autoEarn; game.totalEarned += autoEarn;
+    }
+    if (now - game.lastAI > 1000) { updateAI((now - game.lastAI) / 1000); game.lastAI = now; }
+    if (now - (game.lastBoostCheck || 0) > 5000) { maybeTriggerBoost(); game.lastBoostCheck = now; }
+    updateBoostIndicator(); updateHUD();
+    uiCounter++;
+    if (uiCounter % 30 === 0) { renderShop(); renderClicker(); renderExpand(); renderDaily(); }
+    if (uiCounter % 60 === 0) renderHistory();
+    if (game.settings.autoSave && now - game.lastSave > 15000) { save(); game.lastSave = now; }
+    if (now - (game.lastAchCheck || 0) > 1000) { checkAchievements(); game.lastAchCheck = now; }
+  } catch (e) { console.error('Game loop error:', e); }
 }
 
 // ===================== FLOATING SYMBOLS =====================
@@ -1622,13 +1674,44 @@ function spawnFloatingSymbols() {
 }
 
 // ===================== INIT =====================
-function init() {
-  const loaded = load();
+async function init() {
+  const loadingScreen = document.getElementById('loading-screen');
+  const loadingError = document.getElementById('loading-error');
+
+  try {
+    const { data: authData, error: authError } = await supabaseClient.auth.signInAnonymously();
+    if (authError) {
+      console.warn('Anonymous auth failed:', authError);
+      loadingError.textContent = 'Could not connect to servers. Playing in offline mode — progress will not sync.';
+      loadingError.style.display = 'block';
+      await new Promise(r => setTimeout(r, 1500));
+    } else {
+      supabaseReady = true;
+    }
+  } catch (e) {
+    console.warn('Auth exception:', e);
+    loadingError.textContent = 'Connection issue. Playing in offline mode.';
+    loadingError.style.display = 'block';
+    await new Promise(r => setTimeout(r, 1000));
+  }
+
+  let loaded = false;
+  if (supabaseReady) {
+    try { loaded = await load(); } catch (e) { console.error('Load exception:', e); }
+  }
+
+  loadingScreen.classList.add('fade-out');
+  setTimeout(() => { loadingScreen.style.display = 'none'; }, 500);
+
   if (loaded) setTimeout(() => toast('Welcome Back!', `Balance: ${money(game.money)} · ${money(getIncome())}/sec`, 'fa-arrow-right-to-bracket', '#10d981'), 500);
   else setTimeout(() => toast('Welcome, Tycoon!', 'Click the gold button to earn your first dollars.', 'fa-hand-pointer', '#f5c451'), 500);
+
   renderAll(); spawnFloatingSymbols();
 
-  // Global click handlers
+  document.addEventListener('click', async () => {
+    if (audioCtx && audioCtx.state === 'suspended') await audioCtx.resume();
+  }, { once: true });
+
   document.getElementById('click-btn').addEventListener('click', doClick);
   document.getElementById('upgrade-click').addEventListener('click', upgradeClick);
   document.getElementById('upgrade-auto').addEventListener('click', upgradeAuto);
@@ -1637,7 +1720,6 @@ function init() {
   document.getElementById('crate-place').addEventListener('click', placeFromCrate);
   document.getElementById('daily-bonus-btn').addEventListener('click', claimDaily);
 
-  // Event Delegation for dynamically rendered lists
   document.getElementById('crate-list').addEventListener('click', (e) => {
     const crateEl = e.target.closest('.crate');
     if (crateEl && !crateEl.classList.contains('disabled')) {
@@ -1647,9 +1729,7 @@ function init() {
 
   document.getElementById('inv-list').addEventListener('click', (e) => {
     const itemEl = e.target.closest('.inv-item');
-    if (itemEl) {
-      startPlacing(itemEl.dataset.id);
-    }
+    if (itemEl) { startPlacing(itemEl.dataset.id); }
   });
 
   document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
@@ -1660,7 +1740,6 @@ function init() {
   document.getElementById('btn-achievements').addEventListener('click', () => { renderAchievements(); openModal('modal-achievements'); });
   document.getElementById('btn-settings').addEventListener('click', () => { renderSettings(); openModal('modal-settings'); });
 
-  // Modal close logic
   document.querySelectorAll('[data-close]').forEach(b => { 
     b.addEventListener('click', e => {
       const modal = e.target.closest('.modal-bg');
@@ -1673,6 +1752,7 @@ function init() {
       crateAnimating = false;
     });
   });
+
   document.querySelectorAll('.modal-bg').forEach(bg => { 
     bg.addEventListener('click', e => { 
       if (e.target === bg) {
@@ -1686,7 +1766,6 @@ function init() {
     });
   });
 
-  // Keyboard shortcuts
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { 
       document.querySelectorAll('.modal-bg.show').forEach(m => {
@@ -1705,7 +1784,6 @@ function init() {
     }
   });
 
-  // Tooltips
   const tip = document.getElementById('help-tip');
   document.addEventListener('mouseover', e => {
     const target = e.target.closest('[data-tip]'); if (target) {
@@ -1716,12 +1794,10 @@ function init() {
   });
   document.addEventListener('mouseout', e => { if (e.target.closest('[data-tip]')) tip.classList.remove('show'); });
 
-  // Bulletproof saving listeners
-  window.addEventListener('beforeunload', save);
-  window.addEventListener('pagehide', save);
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') save(); });
+  window.addEventListener('beforeunload', () => { if (supabaseReady) save(); });
+  window.addEventListener('pagehide', () => { if (supabaseReady) save(); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && supabaseReady) save(); });
 
-  // Expose global functions for inline HTML handlers
   window.redeemCode = redeemCode;
   window.startGame = startGame;
 
