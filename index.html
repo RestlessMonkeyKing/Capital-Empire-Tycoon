@@ -336,6 +336,31 @@ body::after {
 @media (max-width: 640px) {
   .game { padding: 8px; gap: 8px; } .hud { grid-template-columns: 1fr; gap: 8px; padding: 8px 14px; } .hud-stats { gap: 16px; } .stat-money .stat-value { font-size: 20px; } .stat-value { font-size: 18px; } .grid-cell { width: 68px; height: 68px; } .brand-text { font-size: 14px; } .toasts { right: 8px; left: 8px; max-width: none; } .toast { min-width: 0; } .modal { max-height: 90vh; }
 }
+
+.auth-tabs { display: flex; gap: 2px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
+.auth-tab { flex: 1; background: transparent; border: none; color: var(--muted); padding: 10px; cursor: pointer; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 2px solid transparent; transition: all .2s; margin-bottom: -1px; }
+.auth-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.auth-form { display: none; }
+.auth-form.active { display: block; }
+.auth-input { width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--fg); padding: 10px 12px; border-radius: 9px; font-family: inherit; font-size: 13px; outline: none; margin-bottom: 10px; transition: border-color .2s; }
+.auth-input:focus { border-color: var(--gold); }
+.auth-input::placeholder { color: var(--muted); opacity: 0.6; }
+.auth-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); font-weight: 700; margin-bottom: 5px; display: block; }
+.auth-btn { width: 100%; background: linear-gradient(135deg, var(--gold), var(--gold-2)); color: #1a1408; border: none; padding: 11px; border-radius: 10px; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; transition: all .2s; margin-bottom: 8px; }
+.auth-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.auth-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none; }
+.auth-btn.secondary { background: var(--card-2); color: var(--fg); border: 1px solid var(--border); }
+.auth-btn.secondary:hover { border-color: var(--gold); color: var(--gold); background: var(--card-3); }
+.auth-divider { display: flex; align-items: center; gap: 10px; margin: 12px 0; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; }
+.auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.auth-error { color: var(--crimson); font-size: 11px; margin-bottom: 10px; text-align: center; min-height: 16px; }
+.auth-success { color: var(--emerald); font-size: 11px; margin-bottom: 10px; text-align: center; min-height: 16px; }
+.auth-info { text-align: center; font-size: 11px; color: var(--muted); margin-top: 8px; }
+.auth-info b { color: var(--fg); }
+#auth-status { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--card-2); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; }
+#auth-status i { color: var(--gold); }
+#auth-status span { font-size: 12px; color: var(--fg-2); }
+
 </style>
 <base target="_blank">
 </head>
@@ -434,6 +459,7 @@ body::after {
   </main>
 </div>
 
+<div class="modal-bg" id="modal-auth"><div class="modal" style="max-width:420px"><div class="modal-head"><div class="modal-title"><i class="fas fa-user"></i> Account</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div><div class="modal-body" id="auth-body"></div></div></div>
 <div class="modal-bg" id="modal-leaderboard"><div class="modal"><div class="modal-head"><div class="modal-title"><i class="fas fa-trophy"></i> Global Leaderboard</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div><div class="modal-body" id="lb-body"></div></div></div>
 <div class="modal-bg" id="modal-achievements"><div class="modal"><div class="modal-head"><div class="modal-title"><i class="fas fa-medal"></i> Achievements</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div><div class="modal-body" id="ach-body"></div></div></div>
 <div class="modal-bg" id="modal-settings"><div class="modal"><div class="modal-head"><div class="modal-title"><i class="fas fa-cog"></i> Settings</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div><div class="modal-body" id="settings-body"></div></div></div>
@@ -486,8 +512,15 @@ body::after {
 // ===================== SUPABASE SETUP =====================
 const SUPABASE_URL = 'https://mdeocobsqjhrztbgferz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kZW9jb2JzcWpocnp0YmdmZXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzNDk4NjYsImV4cCI6MjEwMTkyNTg2Nn0.jkNvTma-Xd7KbIxKOJKYUEa5HbPjNGbFgO8W3d_fUnM';
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let supabaseClient = null;
 let supabaseReady = false;
+try {
+  if (typeof supabase !== 'undefined' && supabase.createClient) {
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+} catch (e) {
+  console.warn('Supabase client init failed:', e);
+}
 
 // ===================== GAME DATA =====================
 const BUILDINGS = {
@@ -1564,7 +1597,19 @@ function renderCollection() {
 }
 function renderSettings() {
   const el = document.getElementById('settings-body');
+  const isLoggedIn = !!currentSession;
+  const userEmail = currentSession?.user?.email || '';
+
   el.innerHTML = `
+    <div class="setting-group">
+      <h4>Account</h4>
+      <div id="auth-status">
+        <i class="fas ${isLoggedIn ? 'fa-user-check' : 'fa-user-xmark'}"></i>
+        <span>${isLoggedIn ? (userEmail || 'Guest Account') : 'Not Signed In'}</span>
+      </div>
+      ${!isLoggedIn ? `<button class="auth-btn" onclick="showAuthModal('login')" style="margin-bottom:8px;"><i class="fas fa-right-to-bracket"></i> Sign In / Register</button>` : ''}
+      ${isLoggedIn ? `<button class="auth-btn secondary" onclick="doSignOut()" style="margin-bottom:8px;"><i class="fas fa-right-from-bracket"></i> Sign Out</button>` : ''}
+    </div>
     <div class="setting-group">
       <h4>Identity</h4>
       <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:8px;">
@@ -1674,40 +1719,241 @@ function spawnFloatingSymbols() {
 }
 
 // ===================== INIT =====================
+
+// ===================== AUTH SYSTEM =====================
+let currentSession = null;
+
+function showAuthModal(mode = 'login') {
+  const el = document.getElementById('auth-body');
+  el.innerHTML = `
+    <div class="auth-tabs">
+      <button class="auth-tab ${mode === 'login' ? 'active' : ''}" data-auth-tab="login">Sign In</button>
+      <button class="auth-tab ${mode === 'register' ? 'active' : ''}" data-auth-tab="register">Create Account</button>
+    </div>
+    <div class="auth-form ${mode === 'login' ? 'active' : ''}" id="auth-login">
+      <label class="auth-label">Email</label>
+      <input type="email" class="auth-input" id="auth-email" placeholder="you@example.com" />
+      <label class="auth-label">Password</label>
+      <input type="password" class="auth-input" id="auth-password" placeholder="••••••••" />
+      <div class="auth-error" id="auth-login-error"></div>
+      <button class="auth-btn" id="auth-login-btn"><i class="fas fa-right-to-bracket"></i> Sign In</button>
+      <div class="auth-divider">or</div>
+      <button class="auth-btn secondary" id="auth-guest-btn"><i class="fas fa-user-secret"></i> Continue as Guest</button>
+    </div>
+    <div class="auth-form ${mode === 'register' ? 'active' : ''}" id="auth-register">
+      <label class="auth-label">Email</label>
+      <input type="email" class="auth-input" id="reg-email" placeholder="you@example.com" />
+      <label class="auth-label">Password</label>
+      <input type="password" class="auth-input" id="reg-password" placeholder="Min 6 characters" />
+      <label class="auth-label">Confirm Password</label>
+      <input type="password" class="auth-input" id="reg-confirm" placeholder="Repeat password" />
+      <div class="auth-error" id="auth-reg-error"></div>
+      <button class="auth-btn" id="auth-reg-btn"><i class="fas fa-user-plus"></i> Create Account</button>
+    </div>
+    <div class="auth-info">Guest accounts save locally only. Registered accounts sync to the cloud.</div>
+  `;
+
+  el.querySelectorAll('.auth-tab').forEach(t => {
+    t.addEventListener('click', () => {
+      const tab = t.dataset.authTab;
+      el.querySelectorAll('.auth-tab').forEach(x => x.classList.toggle('active', x === t));
+      el.querySelectorAll('.auth-form').forEach(x => x.classList.toggle('active', x.id === 'auth-' + tab));
+    });
+  });
+
+  const loginBtn = el.querySelector('#auth-login-btn');
+  if (loginBtn) loginBtn.addEventListener('click', doSignIn);
+
+  const regBtn = el.querySelector('#auth-reg-btn');
+  if (regBtn) regBtn.addEventListener('click', doSignUp);
+
+  const guestBtn = el.querySelector('#auth-guest-btn');
+  if (guestBtn) guestBtn.addEventListener('click', doGuestSignIn);
+
+  // Enter key support
+  el.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const form = inp.closest('.auth-form');
+        if (form.id === 'auth-login') doSignIn();
+        else if (form.id === 'auth-register') doSignUp();
+      }
+    });
+  });
+
+  openModal('modal-auth');
+}
+
+async function doSignIn() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-login-error');
+  const btn = document.getElementById('auth-login-btn');
+
+  if (!email || !password) { errEl.textContent = 'Please enter email and password.'; return; }
+
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Signing in...';
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    currentSession = data.session;
+    supabaseReady = true;
+    closeModal('modal-auth');
+    await loadGameFromCloud();
+    toast('Welcome back!', 'Signed in successfully.', 'fa-user-check', '#10d981');
+  } catch (e) {
+    errEl.textContent = e.message || 'Sign in failed.';
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-right-to-bracket"></i> Sign In';
+  }
+}
+
+async function doSignUp() {
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const confirm = document.getElementById('reg-confirm').value;
+  const errEl = document.getElementById('auth-reg-error');
+  const btn = document.getElementById('auth-reg-btn');
+
+  if (!email || !password) { errEl.textContent = 'Please fill in all fields.'; return; }
+  if (password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+  if (password !== confirm) { errEl.textContent = 'Passwords do not match.'; return; }
+
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Creating...';
+  try {
+    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+    if (error) throw error;
+    currentSession = data.session;
+    supabaseReady = true;
+    closeModal('modal-auth');
+    toast('Account Created!', 'Welcome to Capital Empire.', 'fa-user-plus', '#10d981');
+    await loadGameFromCloud();
+  } catch (e) {
+    errEl.textContent = e.message || 'Registration failed.';
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+  }
+}
+
+async function doGuestSignIn() {
+  const btn = document.getElementById('auth-guest-btn');
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Starting...';
+  try {
+    const { data, error } = await supabaseClient.auth.signInAnonymously();
+    if (error) throw error;
+    currentSession = data.session;
+    supabaseReady = true;
+    closeModal('modal-auth');
+    await loadGameFromCloud();
+    toast('Guest Mode', 'Playing with cloud sync enabled.', 'fa-user-secret', '#f5c451');
+  } catch (e) {
+    // Fallback to pure offline
+    supabaseReady = false;
+    closeModal('modal-auth');
+    toast('Offline Mode', 'Could not connect. Progress saves locally only.', 'fa-wifi', '#ef4458');
+  }
+}
+
+async function doSignOut() {
+  try {
+    await supabaseClient.auth.signOut();
+  } catch (e) {}
+  currentSession = null;
+  supabaseReady = false;
+  game = createNewGame();
+  renderAll();
+  toast('Signed Out', 'Your session has ended.', 'fa-right-from-bracket', '#9ca3af');
+  showAuthModal('login');
+}
+
+async function loadGameFromCloud() {
+  try {
+    const loaded = await load();
+    if (loaded) {
+      setTimeout(() => toast('Welcome Back!', `Balance: ${money(game.money)} · ${money(getIncome())}/sec`, 'fa-arrow-right-to-bracket', '#10d981'), 500);
+    } else {
+      setTimeout(() => toast('Welcome, Tycoon!', 'Click the gold button to earn your first dollars.', 'fa-hand-pointer', '#f5c451'), 500);
+    }
+  } catch (e) {
+    console.error('Cloud load failed:', e);
+    setTimeout(() => toast('Offline Mode', 'Playing with local progress.', 'fa-wifi', '#ef4458'), 500);
+  }
+}
+
+function hideLoadingScreen() {
+  const loadingScreen = document.getElementById('loading-screen');
+  if (!loadingScreen) return;
+  loadingScreen.classList.add('fade-out');
+  setTimeout(() => { loadingScreen.style.display = 'none'; }, 500);
+}
+
 async function init() {
   const loadingScreen = document.getElementById('loading-screen');
   const loadingError = document.getElementById('loading-error');
 
+  // ABSOLUTE FAILSAFE: hide loading screen after 5 seconds no matter what
+  setTimeout(() => {
+    hideLoadingScreen();
+    if (!document.querySelector('.modal-bg.show')) {
+      // If nothing happened, show a toast
+      toast('Ready', 'Capital Empire is loaded.', 'fa-check', '#10d981');
+    }
+  }, 5000);
+
   try {
-    const { data: authData, error: authError } = await supabaseClient.auth.signInAnonymously();
-    if (authError) {
-      console.warn('Anonymous auth failed:', authError);
-      loadingError.textContent = 'Could not connect to servers. Playing in offline mode — progress will not sync.';
+    // Check if Supabase library loaded
+    if (!supabaseClient) {
+      console.warn('Supabase library not loaded');
+      loadingError.textContent = 'Network issue: Supabase library failed to load. Playing in offline mode.';
       loadingError.style.display = 'block';
       await new Promise(r => setTimeout(r, 1500));
-    } else {
-      supabaseReady = true;
+      hideLoadingScreen();
+      setTimeout(() => toast('Offline Mode', 'Supabase not available. Progress is local only.', 'fa-wifi', '#ef4458'), 600);
+      renderAll(); spawnFloatingSymbols();
+      setupEventListeners();
+      lastFrame = Date.now(); requestAnimationFrame(gameLoop);
+      return;
     }
+
+    // Check for existing session
+    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    if (sessionError) console.warn('Session check error:', sessionError);
+
+    if (sessionData?.session) {
+      currentSession = sessionData.session;
+      supabaseReady = true;
+      hideLoadingScreen();
+      await loadGameFromCloud();
+    } else {
+      // No session — show auth modal
+      hideLoadingScreen();
+      showAuthModal('login');
+    }
+
+    // Listen for auth changes
+    if (supabaseClient) supabaseClient.auth.onAuthStateChange((event, session) => {
+      currentSession = session;
+      supabaseReady = !!session;
+      if (event === 'SIGNED_IN') {
+        toast('Connected', 'Cloud sync is now active.', 'fa-cloud', '#10d981');
+      } else if (event === 'SIGNED_OUT') {
+        supabaseReady = false;
+      }
+    });
+
   } catch (e) {
-    console.warn('Auth exception:', e);
-    loadingError.textContent = 'Connection issue. Playing in offline mode.';
+    console.error('Init error:', e);
+    loadingError.textContent = 'Something went wrong during startup. Playing in offline mode.';
     loadingError.style.display = 'block';
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 1500));
+    hideLoadingScreen();
+    setTimeout(() => toast('Offline Mode', 'Connection failed. Progress is local only.', 'fa-wifi', '#ef4458'), 600);
   }
-
-  let loaded = false;
-  if (supabaseReady) {
-    try { loaded = await load(); } catch (e) { console.error('Load exception:', e); }
-  }
-
-  loadingScreen.classList.add('fade-out');
-  setTimeout(() => { loadingScreen.style.display = 'none'; }, 500);
-
-  if (loaded) setTimeout(() => toast('Welcome Back!', `Balance: ${money(game.money)} · ${money(getIncome())}/sec`, 'fa-arrow-right-to-bracket', '#10d981'), 500);
-  else setTimeout(() => toast('Welcome, Tycoon!', 'Click the gold button to earn your first dollars.', 'fa-hand-pointer', '#f5c451'), 500);
 
   renderAll(); spawnFloatingSymbols();
+  setupEventListeners();
+  lastFrame = Date.now(); requestAnimationFrame(gameLoop);
+}
 
+function setupEventListeners() {
   document.addEventListener('click', async () => {
     if (audioCtx && audioCtx.state === 'suspended') await audioCtx.resume();
   }, { once: true });
@@ -1800,9 +2046,8 @@ async function init() {
 
   window.redeemCode = redeemCode;
   window.startGame = startGame;
-
-  lastFrame = Date.now(); requestAnimationFrame(gameLoop);
 }
+
 
 init();
 </script>
