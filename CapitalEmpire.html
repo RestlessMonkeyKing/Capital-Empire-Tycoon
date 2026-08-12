@@ -1,0 +1,2331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capital Empire — Tycoon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root {
+  --bg: #050810; --bg-2: #0a0f1c; --card: #111729; --card-2: #1a2138; --card-3: #232c48;
+  --border: rgba(255,255,255,0.07); --border-2: rgba(255,255,255,0.12);
+  --fg: #eef1f8; --fg-2: #c8cee0; --muted: #6b7494; --muted-2: #8a93b0;
+  --gold: #f5c451; --gold-2: #d99a2b; --gold-3: #fff3c4;
+  --emerald: #10d981; --emerald-2: #0aaf68; --crimson: #ef4458; --azure: #38bdf8;
+  --r-common: #9ca3af; --r-uncommon: #4ade80; --r-rare: #38bdf8; --r-epic: #c084fc; --r-legendary: #fbbf24;
+  --r-mythic: #f43f5e; --r-cosmic: #d946ef;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  background: var(--bg); color: var(--fg); overflow: hidden; position: relative; -webkit-font-smoothing: antialiased;
+}
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: -2;
+  background:
+    radial-gradient(ellipse 70% 50% at 10% 0%, rgba(245,196,81,0.08), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 90% 100%, rgba(16,217,129,0.06), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 50% 50%, rgba(56,189,248,0.04), transparent 70%),
+    linear-gradient(180deg, #050810 0%, #0a0f1c 100%);
+}
+body::after {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background-image: linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 50px 50px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, black 30%, transparent 80%);
+}
+.floating-symbol { position: fixed; font-family: 'Outfit', sans-serif; font-weight: 900; color: rgba(245,196,81,0.035); pointer-events: none; z-index: -1; animation: floatSym linear infinite; user-select: none; }
+@keyframes floatSym { from { transform: translateY(110vh) rotate(0deg); } to { transform: translateY(-20vh) rotate(360deg); } }
+::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; } ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+.game { display: grid; grid-template-rows: auto 1fr; height: 100vh; max-width: 1600px; margin: 0 auto; padding: 12px; gap: 10px; }
+
+.hud { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 20px; padding: 10px 20px; background: linear-gradient(180deg, rgba(17,23,41,0.9), rgba(17,23,41,0.7)); border: 1px solid var(--border); border-radius: 16px; backdrop-filter: blur(20px); position: relative; overflow: hidden; }
+.hud::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(245,196,81,0.4), transparent); }
+.brand { display: flex; align-items: center; gap: 11px; }
+.brand-mark { width: 40px; height: 40px; border-radius: 11px; background: linear-gradient(135deg, var(--gold-3), var(--gold), var(--gold-2)); display: grid; place-items: center; font-family: 'Outfit', sans-serif; font-weight: 900; color: #1a1408; font-size: 20px; box-shadow: 0 4px 20px rgba(245,196,81,0.3), inset 0 1px 0 rgba(255,255,255,0.3); }
+.brand-text { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 16px; letter-spacing: -0.01em; line-height: 1; }
+.brand-text span { color: var(--gold); }
+.brand-text small { display: block; font-size: 9px; font-weight: 500; color: var(--muted); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 3px; }
+.hud-stats { display: flex; align-items: center; justify-content: center; gap: 28px; }
+.stat { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.stat-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--muted); font-weight: 700; }
+.stat-value { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stat-money .stat-value { color: var(--gold); font-size: 26px; text-shadow: 0 0 25px rgba(245,196,81,0.25); }
+.stat-income .stat-value { color: var(--emerald); } .stat-income .stat-value::before { content: '+'; opacity: 0.6; }
+.stat-prestige .stat-value { color: var(--azure); }
+.boost-indicator { display: none; align-items: center; gap: 6px; padding: 5px 12px; background: linear-gradient(90deg, rgba(245,196,81,0.15), rgba(245,196,81,0.05)); border: 1px solid rgba(245,196,81,0.4); border-radius: 20px; font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 12px; color: var(--gold); animation: boostPulse 1s ease-in-out infinite; }
+.boost-indicator.show { display: flex; }
+@keyframes boostPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(245,196,81,0.3); } 50% { box-shadow: 0 0 0 6px rgba(245,196,81,0); } }
+.hud-actions { display: flex; gap: 7px; }
+.icon-btn { width: 40px; height: 40px; border-radius: 11px; background: var(--card-2); border: 1px solid var(--border); color: var(--fg-2); cursor: pointer; display: grid; place-items: center; font-size: 14px; transition: all .2s; position: relative; }
+.icon-btn:hover { background: var(--card-3); border-color: rgba(245,196,81,0.4); color: var(--gold); transform: translateY(-1px); }
+.icon-btn .dot { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; background: var(--crimson); border-radius: 50%; border: 2px solid var(--bg); display: none; }
+.icon-btn .dot.show { display: block; animation: dotPulse 1s infinite; }
+@keyframes dotPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+.main { display: grid; grid-template-columns: 270px 1fr 310px; gap: 10px; min-height: 0; }
+.panel { background: linear-gradient(180deg, rgba(17,23,41,0.85), rgba(17,23,41,0.6)); border: 1px solid var(--border); border-radius: 16px; backdrop-filter: blur(20px); display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+
+.clicker-section { padding: 18px 16px 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+.click-btn { width: 140px; height: 140px; border-radius: 50%; border: none; cursor: pointer; position: relative; background: radial-gradient(circle at 35% 30%, var(--gold-3), var(--gold) 45%, var(--gold-2)); color: #1a1408; font-family: 'Outfit', sans-serif; font-weight: 900; font-size: 16px; letter-spacing: 0.03em; box-shadow: 0 0 0 5px rgba(245,196,81,0.08), 0 0 0 10px rgba(245,196,81,0.04), 0 18px 45px rgba(245,196,81,0.25), inset 0 -8px 25px rgba(217,154,43,0.4), inset 0 3px 10px rgba(255,255,255,0.3); transition: transform .07s; display: grid; place-items: center; text-align: center; }
+.click-btn::before { content: ''; position: absolute; inset: -18px; border-radius: 50%; background: radial-gradient(circle, rgba(245,196,81,0.25), transparent 65%); z-index: -1; animation: pulse 2.5s ease-in-out infinite; }
+.click-btn::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.4), transparent 50%); pointer-events: none; }
+@keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.4; } 50% { transform: scale(1.2); opacity: 0.7; } }
+.click-btn:active { transform: scale(0.92); }
+.click-btn .amount { font-size: 26px; display: block; line-height: 1; }
+.click-btn .label { font-size: 8px; font-weight: 800; letter-spacing: 0.25em; margin-top: 5px; opacity: 0.7; }
+.click-info { text-align: center; font-size: 11px; color: var(--muted); } .click-info b { color: var(--gold); font-family: 'Outfit'; font-weight: 700; }
+.upgrade-btn { width: 100%; background: var(--card-2); border: 1px solid var(--border); border-radius: 10px; padding: 8px 11px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all .2s; color: var(--fg); font-family: inherit; }
+.upgrade-btn:hover:not(:disabled) { border-color: rgba(56,189,248,0.4); background: var(--card-3); transform: translateY(-1px); }
+.upgrade-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.upgrade-btn .uc-label { font-size: 11px; font-weight: 600; } .upgrade-btn .uc-label small { display: block; color: var(--muted); font-size: 9px; font-weight: 400; margin-top: 2px; }
+.upgrade-btn .uc-cost { font-family: 'Outfit'; font-weight: 800; font-size: 12px; color: var(--gold); white-space: nowrap; } .upgrade-btn .uc-cost::before { content: '$'; opacity: 0.6; font-size: 10px; }
+.upgrade-btn.auto { border-color: rgba(16,217,129,0.2); } .upgrade-btn.auto .uc-cost { color: var(--emerald); } .upgrade-btn.auto:hover:not(:disabled) { border-color: rgba(16,217,129,0.4); }
+
+.qstats { padding: 8px 14px; display: flex; flex-direction: column; gap: 4px; border-bottom: 1px solid var(--border); }
+.qstat { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(255,255,255,0.02); border-radius: 8px; font-size: 11px; }
+.qstat .qlabel { color: var(--muted); display: flex; align-items: center; gap: 7px; } .qstat .qlabel i { color: var(--gold); width: 12px; font-size: 10px; text-align: center; }
+.qstat .qvalue { font-family: 'Outfit'; font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums; }
+
+.daily-bonus { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.daily-bonus-btn { width: 100%; background: linear-gradient(135deg, rgba(245,196,81,0.12), rgba(245,196,81,0.04)); border: 1px solid rgba(245,196,81,0.3); border-radius: 10px; padding: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all .2s; color: var(--fg); font-family: inherit; text-align: left; }
+.daily-bonus-btn:hover:not(:disabled) { border-color: var(--gold); background: linear-gradient(135deg, rgba(245,196,81,0.2), rgba(245,196,81,0.08)); transform: translateY(-1px); }
+.daily-bonus-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.daily-bonus-btn.ready { animation: dailyPulse 1.5s infinite; }
+@keyframes dailyPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(245,196,81,0.3); } 50% { box-shadow: 0 0 0 5px rgba(245,196,81,0); } }
+.daily-icon { width: 34px; height: 34px; border-radius: 9px; background: rgba(245,196,81,0.15); display: grid; place-items: center; font-size: 14px; color: var(--gold); flex-shrink: 0; }
+.daily-info { flex: 1; min-width: 0; } .daily-title { font-family: 'Outfit'; font-weight: 700; font-size: 12px; } .daily-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+.daily-reward { font-family: 'Outfit'; font-weight: 800; font-size: 13px; color: var(--gold); }
+
+.ach-mini { padding: 10px 14px; flex: 1; overflow-y: auto; }
+.ach-mini-head { font-size: 9px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--muted); margin-bottom: 7px; font-weight: 700; display: flex; justify-content: space-between; }
+.ach-mini-head span { color: var(--gold); }
+.ach-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+.ach-cell { aspect-ratio: 1; background: rgba(255,255,255,0.03); border-radius: 7px; border: 1px solid var(--border); display: grid; place-items: center; font-size: 11px; color: rgba(255,255,255,0.15); cursor: help; transition: all .2s; }
+.ach-cell.unlocked { background: rgba(245,196,81,0.12); border-color: rgba(245,196,81,0.4); color: var(--gold); }
+.ach-cell:hover { transform: scale(1.15); z-index: 5; }
+
+.land-section { display: flex; flex-direction: column; min-height: 0; }
+.land-head { padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+.land-title { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 16px; letter-spacing: -0.01em; display: flex; align-items: center; gap: 9px; }
+.land-title i { color: var(--gold); font-size: 14px; }
+.land-info { display: flex; gap: 14px; align-items: center; font-size: 11px; color: var(--muted); }
+.land-info b { color: var(--fg); font-family: 'Outfit'; font-weight: 700; font-variant-numeric: tabular-nums; }
+.land-info .sep { color: rgba(255,255,255,0.1); }
+.land-grid-wrap { flex: 1; display: grid; place-items: center; padding: 16px; overflow: auto; position: relative; }
+.land-grid { display: grid; gap: 7px; padding: 14px; background: repeating-linear-gradient(45deg, rgba(255,255,255,0.012) 0 10px, transparent 10px 20px), rgba(0,0,0,0.15); border-radius: 14px; border: 1px solid var(--border); position: relative; }
+.grid-cell { width: 80px; height: 80px; border-radius: 11px; background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.08); cursor: pointer; position: relative; transition: all .15s; display: grid; place-items: center; }
+.grid-cell:hover { background: rgba(255,255,255,0.04); border-color: rgba(245,196,81,0.25); }
+.grid-cell.placeable { background: rgba(245,196,81,0.08); border: 1px dashed var(--gold); animation: shimmer 1.5s ease-in-out infinite; }
+@keyframes shimmer { 0%, 100% { box-shadow: 0 0 0 0 rgba(245,196,81,0.2); } 50% { box-shadow: 0 0 0 4px rgba(245,196,81,0.08); } }
+.grid-cell.has-building { background: var(--card-2); border: 1px solid var(--border); }
+.grid-cell.has-building:hover { transform: translateY(-2px); filter: brightness(1.15); border-color: rgba(255,255,255,0.2); }
+.grid-cell.moving-source { border: 2px solid var(--gold); box-shadow: 0 0 15px rgba(245,196,81,0.4); }
+.building { width: 100%; height: 100%; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; position: relative; overflow: hidden; padding: 4px; --rc: var(--r-common); --rbg: rgba(156,163,175,0.1); }
+.building::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, var(--rc), transparent 60%); opacity: 0.15; }
+.building::after { content: ''; position: absolute; inset: 0; border-radius: 10px; box-shadow: inset 0 0 0 1px var(--rc); pointer-events: none; }
+.building.rarity-legendary::after, .building.rarity-mythic::after, .building.rarity-cosmic::after, .building.rarity-divine::after, .building.rarity-celestial::after, .building.rarity-eternal::after, .building.rarity-omnipotent::after, .building.rarity-transcendental::after { animation: legGlow 2s ease-in-out infinite; }
+.building.rarity-epic::after { animation: epicGlow 2.5s ease-in-out infinite; }
+@keyframes legGlow { 0%, 100% { box-shadow: inset 0 0 0 1px var(--rc), 0 0 15px -4px var(--rc); } 50% { box-shadow: inset 0 0 0 1px var(--rc), 0 0 30px 2px var(--rc); } }
+@keyframes epicGlow { 0%, 100% { box-shadow: inset 0 0 0 1px var(--rc), 0 0 12px -4px var(--rc); } 50% { box-shadow: inset 0 0 0 1px var(--rc), 0 0 24px -1px var(--rc); } }
+.building.rarity-hansen::after { animation: hansenRainbow 2s linear infinite; }
+@keyframes hansenRainbow {
+  0% { box-shadow: inset 0 0 0 1px #ff0000, 0 0 18px -4px #ff0000; }
+  14% { box-shadow: inset 0 0 0 1px #ff8800, 0 0 18px -4px #ff8800; }
+  28% { box-shadow: inset 0 0 0 1px #ffff00, 0 0 18px -4px #ffff00; }
+  42% { box-shadow: inset 0 0 0 1px #00ff00, 0 0 18px -4px #00ff00; }
+  57% { box-shadow: inset 0 0 0 1px #00ccff, 0 0 18px -4px #00ccff; }
+  71% { box-shadow: inset 0 0 0 1px #6600ff, 0 0 18px -4px #6600ff; }
+  85% { box-shadow: inset 0 0 0 1px #ff00ff, 0 0 18px -4px #ff00ff; }
+  100% { box-shadow: inset 0 0 0 1px #ff0000, 0 0 18px -4px #ff0000; }
+}
+.building.rarity-hansen .building-icon {
+  background: linear-gradient(90deg, #ff0000,#ff8800,#ffff00,#00ff00,#00ccff,#6600ff,#ff00ff,#ff0000);
+  background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  animation: hansenSlide 1.5s linear infinite;
+  font-size: 22px;
+  filter: none;
+}
+@keyframes hansenSlide { 0% { background-position: 0% 0; } 100% { background-position: 300% 0; } }
+.building-icon { font-size: 20px; color: var(--rc); filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); z-index: 1; line-height: 1; }
+.building-name { font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.03em; text-align: center; font-weight: 700; z-index: 1; color: var(--fg-2); line-height: 1.1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
+.building-income { font-size: 9px; font-weight: 700; font-family: 'Outfit', sans-serif; color: var(--emerald); z-index: 1; line-height: 1; } .building-income::before { content: '+'; }
+.building-level { position: absolute; top: 3px; right: 3px; background: var(--gold); color: #1a1408; font-family: 'Outfit'; font-weight: 900; font-size: 8px; padding: 1px 4px; border-radius: 4px; z-index: 2; line-height: 1; }
+.placing-banner { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: rgba(245,196,81,0.12); border: 1px solid var(--gold); color: var(--gold); padding: 7px 14px; border-radius: 20px; font-size: 11px; font-weight: 600; display: none; align-items: center; gap: 8px; z-index: 10; backdrop-filter: blur(10px); }
+.placing-banner.show { display: flex; } .placing-banner button { background: transparent; border: none; color: var(--gold); cursor: pointer; font-size: 13px; }
+.expand-bar { padding: 10px 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.expand-info { font-size: 11px; color: var(--muted); line-height: 1.4; } .expand-info b { color: var(--fg); font-family: 'Outfit'; font-weight: 700; } .expand-info .cost { color: var(--gold); }
+.save-indicator { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--muted); white-space: nowrap; background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 5px 10px; border-radius: 8px; }
+.save-indicator i { color: var(--azure); font-size: 11px; }
+.save-indicator.saved i { color: var(--emerald); }
+
+.btn { background: linear-gradient(135deg, var(--gold), var(--gold-2)); color: #1a1408; border: none; padding: 8px 15px; border-radius: 10px; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 12px; cursor: pointer; transition: all .2s; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(245,196,81,0.2); white-space: nowrap; }
+.btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(245,196,81,0.35); filter: brightness(1.05); }
+.btn:disabled { background: var(--card-2); color: var(--muted); cursor: not-allowed; box-shadow: none; opacity: 0.5; }
+.btn-ghost { background: var(--card-2); color: var(--fg); border: 1px solid var(--border); box-shadow: none; }
+.btn-ghost:hover:not(:disabled) { border-color: rgba(245,196,81,0.4); color: var(--gold); background: var(--card-3); }
+.btn-blue { background: linear-gradient(135deg, var(--azure), #0ea5e9); color: #001520; box-shadow: 0 4px 15px rgba(56,189,248,0.2); }
+.btn-blue:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(56,189,248,0.35); filter: brightness(1.05); }
+.btn-sm { padding: 6px 11px; font-size: 11px; border-radius: 8px; }
+
+.tabs { display: flex; padding: 8px 10px 0; gap: 2px; border-bottom: 1px solid var(--border); }
+.tab { flex: 1; background: transparent; border: none; color: var(--muted); padding: 9px 10px; cursor: pointer; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 2px solid transparent; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: -1px; }
+.tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.tab .badge { background: var(--crimson); color: white; border-radius: 10px; padding: 1px 6px; font-size: 9px; min-width: 15px; text-align: center; font-weight: 700; letter-spacing: 0; }
+.panel-body { flex: 1; overflow-y: auto; padding: 10px; }
+
+.crate-list { display: flex; flex-direction: column; gap: 7px; }
+.crate { background: linear-gradient(135deg, var(--card-2), var(--card)); border: 1px solid var(--border); border-radius: 13px; padding: 11px; cursor: pointer; transition: all .2s; position: relative; overflow: hidden; display: flex; align-items: center; gap: 11px; --cc: var(--gold); }
+.crate::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, var(--cc), transparent 50%); opacity: 0.06; pointer-events: none; }
+.crate::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--cc); }
+.crate.clicked { animation: crateGlow .5s ease-out; }
+@keyframes crateGlow { 0% { box-shadow: 0 0 0 0 var(--cc); } 100% { box-shadow: 0 0 28px 8px var(--cc); } }
+.crate.disabled { opacity: 0.45; cursor: not-allowed; }
+.crate-icon { width: 48px; height: 48px; border-radius: 11px; background: linear-gradient(135deg, var(--cc), transparent); display: grid; place-items: center; font-size: 18px; color: var(--cc); filter: drop-shadow(0 0 8px var(--cc)); flex-shrink: 0; }
+.crate-info { flex: 1; min-width: 0; }
+.crate-name { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 13px; margin-bottom: 3px; }
+.crate-odds { font-size: 9px; color: var(--muted); display: flex; gap: 5px; flex-wrap: wrap; }
+.crate-odds span { display: inline-flex; align-items: center; gap: 3px; } .crate-odds .dot { width: 5px; height: 5px; border-radius: 50%; }
+.crate-price { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 14px; color: var(--gold); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; } .crate-price::before { content: '$'; opacity: 0.6; font-size: 11px; }
+.crate-price.cant { color: var(--crimson); opacity: 0.7; }
+
+.inv-list { display: flex; flex-direction: column; gap: 5px; }
+.inv-empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 12px; }
+.inv-empty i { font-size: 32px; opacity: 0.3; margin-bottom: 12px; display: block; }
+.inv-empty b { display: block; color: var(--fg-2); margin-bottom: 4px; font-family: 'Outfit'; font-weight: 700; font-size: 13px; }
+.inv-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; background: var(--card-2); border: 1px solid var(--border); border-left: 3px solid var(--rc); border-radius: 10px; cursor: pointer; transition: all .15s; --rc: var(--r-common); --rbg: rgba(156,163,175,0.1); }
+.inv-item:hover { background: var(--card-3); transform: translateX(2px); }
+.inv-icon { width: 34px; height: 34px; border-radius: 8px; background: var(--rbg); display: grid; place-items: center; font-size: 13px; color: var(--rc); flex-shrink: 0; }
+.inv-info { flex: 1; min-width: 0; }
+.inv-name { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.inv-meta { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 1px; } .inv-meta .income { color: var(--emerald); font-weight: 700; }
+.inv-action { background: var(--rc); color: #000; border: none; padding: 5px 9px; border-radius: 7px; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 10px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+
+.history-list { display: flex; flex-direction: column; gap: 4px; }
+.history-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; background: var(--card-2); border: 1px solid var(--border); border-left: 3px solid var(--rc); border-radius: 9px; font-size: 11px; --rc: var(--r-common); }
+.history-item .h-icon { color: var(--rc); font-size: 12px; width: 14px; text-align: center; }
+.history-item .h-name { font-weight: 600; flex: 1; }
+.history-item .h-rarity { font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--rc); font-weight: 700; }
+
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
+.modal-bg.show { display: flex; animation: fadeIn .25s; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal { background: linear-gradient(180deg, var(--card), var(--bg-2)); border: 1px solid var(--border-2); border-radius: 18px; width: 100%; max-width: 540px; max-height: 85vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 30px 80px rgba(0,0,0,0.7); animation: modalIn .3s ease-out; }
+@keyframes modalIn { from { transform: scale(0.95) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+.modal-head { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+.modal-title { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 17px; display: flex; align-items: center; gap: 9px; }
+.modal-title i { color: var(--gold); }
+.modal-close { width: 30px; height: 30px; border-radius: 8px; background: var(--card-2); border: 1px solid var(--border); color: var(--muted); cursor: pointer; display: grid; place-items: center; transition: all .2s; }
+.modal-close:hover { color: var(--crimson); border-color: var(--crimson); }
+.modal-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
+
+.crate-modal { max-width: 700px; }
+.roulette-viewport { width: 100%; height: 180px; overflow: hidden; position: relative; mask-image: linear-gradient(90deg, transparent, black 15%, black 85%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, black 15%, black 85%, transparent); }
+.roulette-strip { display: flex; gap: 12px; padding: 20px 0; will-change: transform; }
+.roulette-item { width: 110px; height: 140px; flex-shrink: 0; border-radius: 14px; background: var(--card-2); border: 1px solid var(--rc); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; position: relative; --rc: var(--r-common); }
+.roulette-item::before { content: ''; position: absolute; inset: 0; border-radius: 14px; background: linear-gradient(180deg, var(--rc), transparent 70%); opacity: 0.1; }
+.roulette-item.winner { animation: winnerPulse 0.6s ease-in-out infinite alternate; box-shadow: 0 0 25px var(--rc); transform: scale(1.05); }
+@keyframes winnerPulse { from { box-shadow: 0 0 15px var(--rc); } to { box-shadow: 0 0 35px var(--rc); } }
+.ri-icon { font-size: 32px; color: var(--rc); filter: drop-shadow(0 0 8px var(--rc)); }
+.ri-name { font-size: 10px; font-weight: 700; color: var(--fg); text-align: center; padding: 0 6px; line-height: 1.2; }
+.ri-income { font-family: 'Outfit'; font-weight: 700; font-size: 11px; color: var(--emerald); }
+.roulette-pointer { position: absolute; top: 0; bottom: 0; left: 50%; width: 4px; background: var(--gold); transform: translateX(-50%); z-index: 10; box-shadow: 0 0 15px var(--gold); }
+.roulette-pointer::before, .roulette-pointer::after { content: ''; position: absolute; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; }
+.roulette-pointer::before { top: 0; border-top: 12px solid var(--gold); }
+.roulette-pointer::after { bottom: 0; border-bottom: 12px solid var(--gold); }
+.crate-result-info { text-align: center; padding: 15px; border-top: 1px solid var(--border); display: none; }
+.crate-result-info.show { display: block; animation: fadeIn .4s; }
+.result-rarity { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 12px; letter-spacing: 0.35em; text-transform: uppercase; color: var(--rc); margin-bottom: 8px; }
+.result-name { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 22px; margin-bottom: 4px; }
+.result-income { font-size: 14px; color: var(--emerald); font-family: 'Outfit', sans-serif; font-weight: 700; } .result-income::before { content: '+'; } .result-income::after { content: ' / sec'; opacity: 0.6; font-weight: 500; }
+.crate-actions { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; } .crate-actions .btn { flex: 1; justify-content: center; }
+
+.lb-entry { display: flex; align-items: center; gap: 11px; padding: 10px 12px; background: var(--card-2); border: 1px solid var(--border); border-radius: 11px; margin-bottom: 5px; position: relative; overflow: hidden; }
+.lb-entry.you { border-color: var(--gold); background: linear-gradient(90deg, rgba(245,196,81,0.1), var(--card-2)); }
+.lb-rank { font-family: 'Outfit', sans-serif; font-weight: 900; font-size: 18px; width: 32px; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
+.lb-entry.top-1 .lb-rank { color: var(--gold); } .lb-entry.top-2 .lb-rank { color: #c0c5d0; } .lb-entry.top-3 .lb-rank { color: #cd7f32; }
+.lb-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--ac, var(--gold)); display: grid; place-items: center; font-weight: 800; color: #000; flex-shrink: 0; font-family: 'Outfit'; font-size: 13px; }
+.lb-info { flex: 1; min-width: 0; }
+.lb-name { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+.lb-name .you-tag { background: var(--gold); color: #1a1408; font-size: 8px; padding: 1px 5px; border-radius: 4px; font-weight: 800; letter-spacing: 0.05em; }
+.lb-bar { height: 4px; background: rgba(255,255,255,0.04); border-radius: 2px; margin-top: 4px; overflow: hidden; }
+.lb-bar-fill { height: 100%; background: var(--ac, var(--gold)); border-radius: 2px; transition: width .6s; }
+.lb-money { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 13px; color: var(--gold); font-variant-numeric: tabular-nums; }
+
+.setting-group { margin-bottom: 16px; }
+.setting-group h4 { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 9px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--muted); margin-bottom: 7px; }
+.setting-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--card-2); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 4px; gap: 12px; }
+.setting-label { font-size: 12px; font-weight: 500; } .setting-desc { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.toggle { width: 40px; height: 21px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; cursor: pointer; position: relative; transition: all .2s; flex-shrink: 0; }
+.toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; background: var(--muted); border-radius: 50%; transition: all .2s; }
+.toggle.on { background: rgba(245,196,81,0.2); border-color: var(--gold); } .toggle.on::after { left: 21px; background: var(--gold); }
+.setting-select { background: var(--card); border: 1px solid var(--border); color: var(--fg); padding: 5px 9px; border-radius: 7px; font-family: inherit; font-size: 11px; cursor: pointer; }
+.danger-btn { background: rgba(239,68,88,0.1); color: var(--crimson); border: 1px solid rgba(239,68,88,0.3); padding: 9px 13px; border-radius: 9px; cursor: pointer; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 12px; width: 100%; transition: all .2s; }
+.danger-btn:hover { background: rgba(239,68,88,0.2); border-color: var(--crimson); }
+
+.ach-list { display: flex; flex-direction: column; gap: 5px; }
+.ach-card { display: flex; align-items: center; gap: 11px; padding: 10px 12px; background: var(--card-2); border: 1px solid var(--border); border-radius: 10px; opacity: 0.45; transition: all .2s; }
+.ach-card.unlocked { opacity: 1; border-color: rgba(245,196,81,0.3); background: linear-gradient(90deg, rgba(245,196,81,0.05), var(--card-2)); }
+.ach-icon { width: 36px; height: 36px; border-radius: 9px; background: rgba(255,255,255,0.04); display: grid; place-items: center; font-size: 14px; color: var(--muted); flex-shrink: 0; }
+.ach-card.unlocked .ach-icon { background: rgba(245,196,81,0.12); color: var(--gold); }
+.ach-info { flex: 1; } .ach-name { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 13px; } .ach-desc { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+.prestige-info { text-align: center; padding: 10px; }
+.prestige-mult { font-family: 'Outfit'; font-weight: 900; font-size: 36px; color: var(--azure); text-shadow: 0 0 20px rgba(56,189,248,0.3); }
+.prestige-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.prestige-btn { background: linear-gradient(135deg, var(--azure), #0ea5e9); color: #001520; border: none; padding: 12px; border-radius: 10px; width: 100%; font-family: 'Outfit'; font-weight: 800; font-size: 14px; cursor: pointer; margin-top: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+.prestige-btn:disabled { background: var(--card-2); color: var(--muted); cursor: not-allowed; }
+
+.toasts { position: fixed; bottom: 16px; right: 16px; z-index: 2000; display: flex; flex-direction: column-reverse; gap: 7px; pointer-events: none; max-width: 350px; }
+.toast { background: var(--card); border: 1px solid var(--border-2); border-left: 3px solid var(--tc, var(--gold)); border-radius: 11px; padding: 10px 13px; min-width: 250px; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: toastIn 0.3s ease-out, toastOut 0.4s ease-in 3.6s forwards; pointer-events: auto; }
+@keyframes toastIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes toastOut { to { transform: translateX(120%); opacity: 0; } }
+.toast-icon { width: 28px; height: 28px; border-radius: 7px; background: var(--tbg, rgba(245,196,81,0.12)); color: var(--tc, var(--gold)); display: grid; place-items: center; font-size: 12px; flex-shrink: 0; }
+.toast-content { flex: 1; min-width: 0; } .toast-title { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 12px; margin-bottom: 1px; } .toast-msg { font-size: 11px; color: var(--muted); }
+
+.particle { position: fixed; pointer-events: none; z-index: 999; font-family: 'Outfit', sans-serif; font-weight: 800; color: var(--gold); text-shadow: 0 2px 8px rgba(245,196,81,0.6); animation: particleFloat 1s ease-out forwards; font-size: 13px; }
+@keyframes particleFloat { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.1); opacity: 0; } }
+.click-ripple { position: absolute; border-radius: 50%; border: 2px solid var(--gold); pointer-events: none; animation: ripple 0.6s ease-out forwards; }
+@keyframes ripple { 0% { width: 0; height: 0; opacity: 0.6; } 100% { width: 180px; height: 180px; opacity: 0; transform: translate(-90px, -90px); } }
+.confetti { position: fixed; pointer-events: none; z-index: 1500; width: 8px; height: 8px; border-radius: 2px; animation: confettiFall 2s ease-out forwards; }
+@keyframes confettiFall { 0% { transform: translate(0,0) rotate(0deg); opacity: 1; } 100% { transform: translate(var(--cx), var(--cy)) rotate(720deg); opacity: 0; } }
+
+.help-tip { position: fixed; background: var(--bg-2); border: 1px solid var(--border-2); border-radius: 8px; padding: 7px 11px; font-size: 11px; color: var(--fg); z-index: 3000; pointer-events: none; max-width: 220px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); opacity: 0; transition: opacity .15s; }
+.help-tip.show { opacity: 1; } .help-tip b { color: var(--gold); display: block; margin-bottom: 2px; font-family: 'Outfit'; }
+
+.collection-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.coll-card { aspect-ratio: 1; background: var(--card-2); border: 1px solid var(--border); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 4px; --rc: var(--r-common); position: relative; }
+.coll-card.locked { opacity: 0.3; filter: grayscale(1); }
+.coll-card.unlocked { border-color: var(--rc); box-shadow: 0 0 10px -2px var(--rc); }
+.coll-icon { font-size: 16px; color: var(--rc); }
+.coll-name { font-size: 7px; text-transform: uppercase; font-weight: 700; text-align: center; line-height: 1.1; color: var(--fg-2); }
+
+.promo-input { display: flex; gap: 6px; }
+.promo-input input { flex: 1; background: var(--card); border: 1px solid var(--border); color: var(--fg); padding: 8px 11px; border-radius: 8px; font-family: inherit; font-size: 12px; outline: none; text-transform: uppercase; }
+.promo-input input:focus { border-color: var(--gold); }
+.promo-input button { background: var(--gold); color: #1a1408; border: none; padding: 0 14px; border-radius: 8px; font-family: 'Outfit'; font-weight: 700; font-size: 12px; cursor: pointer; }
+
+.bm-card { background: linear-gradient(145deg, var(--card-2), var(--card)); border: 1px solid var(--rc); border-radius: 20px; overflow: hidden; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.5); --rc: var(--gold); }
+.bm-banner { height: 110px; background: linear-gradient(135deg, var(--rc), transparent); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.bm-banner::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 100%, var(--rc), transparent 70%); opacity: 0.4; }
+.bm-banner::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 50%, var(--card-2)); }
+.bm-banner i { font-size: 54px; color: var(--rc); filter: drop-shadow(0 5px 15px var(--rc)); z-index: 2; animation: floatIcon 3s ease-in-out infinite; }
+@keyframes floatIcon { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.bm-content { padding: 16px 20px 20px; position: relative; z-index: 3; margin-top: -20px; text-align: center; background: linear-gradient(180deg, transparent, var(--card-2) 20%); }
+.bm-rarity { font-size: 10px; font-weight: 800; letter-spacing: 0.3em; color: var(--rc); text-transform: uppercase; margin-bottom: 5px; }
+.bm-name { font-family: 'Outfit'; font-weight: 800; font-size: 22px; margin-bottom: 15px; }
+.bm-stats { display: flex; justify-content: center; gap: 30px; margin-bottom: 18px; }
+.bm-stat-block { display: flex; flex-direction: column; align-items: center; }
+.bm-stat-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); font-weight: 700; }
+.bm-stat-val { font-family: 'Outfit'; font-weight: 800; font-size: 22px; margin-top: 3px; }
+.bm-stat-val.gold { color: var(--gold); } .bm-stat-val.green { color: var(--emerald); }
+.bm-level-bar { height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; margin-bottom: 18px; position: relative; }
+.bm-level-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-3)); border-radius: 4px; transition: width .5s; box-shadow: 0 0 10px var(--gold); }
+.bm-actions { display: flex; gap: 10px; }
+.bm-actions .btn { flex: 1; justify-content: center; padding: 10px; font-size: 13px; }
+
+.arcade-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 10px; }
+.arcade-card { background: var(--card-2); border: 1px solid var(--border); border-radius: 14px; padding: 14px; cursor: pointer; transition: all .2s; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.arcade-card:hover { border-color: var(--gold); transform: translateY(-3px); background: var(--card-3); }
+.arcade-icon { width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, var(--gold), var(--gold-2)); display: grid; place-items: center; font-size: 22px; color: #1a1408; }
+.arcade-title { font-family: 'Outfit'; font-weight: 700; font-size: 13px; }
+.arcade-desc { font-size: 10px; color: var(--muted); }
+.arcade-reward { font-size: 10px; color: var(--emerald); font-weight: 700; margin-top: 4px; }
+.arcade-highscore { font-size: 10px; color: var(--gold); font-weight: 700; }
+
+.game-modal { max-width: 480px; }
+.game-canvas { width: 100%; height: auto; aspect-ratio: 440/360; background: #0d1322; border-radius: 12px; display: block; touch-action: none; image-rendering: pixelated; image-rendering: crisp-edges; }
+.game-overlay { position: absolute; inset: 16px; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; border-radius: 12px; z-index: 5; }
+.game-overlay.hide { display: none; }
+.game-overlay h3 { font-family: 'Outfit'; font-size: 24px; font-weight: 800; color: var(--gold); }
+.game-overlay p { font-size: 12px; color: var(--muted); text-align: center; max-width: 300px; }
+.game-score { position: absolute; top: 28px; left: 28px; font-family: 'Outfit'; font-weight: 800; font-size: 24px; color: var(--gold); z-index: 4; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
+.game-instructions { padding: 12px 20px; font-size: 11px; color: var(--muted); text-align: center; }
+
+.market-form { display: flex; flex-direction: column; gap: 8px; }
+.market-form select, .market-form input { background: var(--card); border: 1px solid var(--border); color: var(--fg); padding: 8px 10px; border-radius: 8px; font-family: inherit; font-size: 12px; outline: none; }
+.market-form select:focus, .market-form input:focus { border-color: var(--gold); }
+.market-section { margin-bottom: 16px; }
+.market-section h4 { font-family: 'Outfit'; font-weight: 700; font-size: 9px; text-transform: uppercase; letter-spacing: .2em; color: var(--muted); margin-bottom: 8px; }
+.ml-entry { display: flex; align-items: center; gap: 9px; padding: 9px 11px; background: var(--card-2); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 6px; --rc: var(--r-common); }
+
+@media (max-width: 1100px) {
+  .main { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }
+  .panel { max-height: 42vh; } .clicker-section { padding: 12px; } .click-btn { width: 120px; height: 120px; } .hud-stats { gap: 20px; }
+  .arcade-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .game { padding: 8px; gap: 8px; } .hud { grid-template-columns: 1fr; gap: 8px; padding: 8px 14px; } .hud-stats { gap: 16px; } .stat-money .stat-value { font-size: 20px; } .stat-value { font-size: 18px; } .grid-cell { width: 68px; height: 68px; } .brand-text { font-size: 14px; } .toasts { right: 8px; left: 8px; max-width: none; } .toast { min-width: 0; } .modal { max-height: 90vh; }
+}
+
+#loading-screen { position:fixed; inset:0; background:var(--bg); z-index:5000; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; transition:opacity .6s; }
+#loading-screen.fade-out { opacity:0; pointer-events:none; }
+.auth-tabs { display:flex; gap:2px; margin-bottom:12px; border-bottom:1px solid var(--border); }
+.auth-tab { flex:1; background:transparent; border:none; color:var(--muted); padding:10px; cursor:pointer; font-family:'Outfit',sans-serif; font-weight:600; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; border-bottom:2px solid transparent; transition:all .2s; margin-bottom:-1px; }
+.auth-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+.auth-form { display:none; }
+.auth-form.active { display:block; }
+.auth-input { width:100%; background:var(--card); border:1px solid var(--border); color:var(--fg); padding:10px 12px; border-radius:9px; font-family:inherit; font-size:13px; outline:none; margin-bottom:10px; transition:border-color .2s; }
+.auth-input:focus { border-color:var(--gold); }
+.auth-input::placeholder { color:var(--muted); opacity:0.6; }
+.auth-label { font-size:10px; text-transform:uppercase; letter-spacing:0.15em; color:var(--muted); font-weight:700; margin-bottom:5px; display:block; }
+.auth-btn { width:100%; background:linear-gradient(135deg,var(--gold),var(--gold-2)); color:#1a1408; border:none; padding:11px; border-radius:10px; font-family:'Outfit',sans-serif; font-weight:700; font-size:13px; cursor:pointer; transition:all .2s; margin-bottom:8px; }
+.auth-btn:hover { filter:brightness(1.1); transform:translateY(-1px); }
+.auth-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; filter:none; }
+.auth-btn.secondary { background:var(--card-2); color:var(--fg); border:1px solid var(--border); }
+.auth-btn.secondary:hover { border-color:var(--gold); color:var(--gold); background:var(--card-3); }
+.auth-divider { display:flex; align-items:center; gap:10px; margin:12px 0; color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:0.1em; }
+.auth-divider::before,.auth-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+.auth-error { color:var(--crimson); font-size:11px; margin-bottom:10px; text-align:center; min-height:16px; }
+.auth-info { text-align:center; font-size:11px; color:var(--muted); margin-top:8px; }
+#auth-status { display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--card-2); border:1px solid var(--border); border-radius:10px; margin-bottom:12px; }
+#auth-status i { color:var(--gold); }
+#auth-status span { font-size:12px; color:var(--fg-2); }
+
+.building.rarity-divine::after { animation: legGlow 1.5s ease-in-out infinite; }
+.building.rarity-celestial::after { animation: legGlow 1.2s ease-in-out infinite; }
+.building.rarity-eternal::after { animation: legGlow 1s ease-in-out infinite; }
+.building.rarity-omnipotent::after { animation: legGlow 0.8s ease-in-out infinite; }
+.building.rarity-transcendental::after { animation: legGlow 0.6s ease-in-out infinite; }
+
+</style>
+</head>
+<body>
+
+<div id="loading-screen">
+  <div style="width:60px;height:60px;border-radius:16px;background:linear-gradient(135deg,var(--gold-3),var(--gold),var(--gold-2));display:grid;place-items:center;font-family:'Outfit',sans-serif;font-weight:900;color:#1a1408;font-size:28px;box-shadow:0 4px 30px rgba(245,196,81,0.4);animation:pulse 1.5s ease-in-out infinite;">C</div>
+  <div style="font-family:'Outfit',sans-serif;font-weight:700;color:var(--fg);font-size:16px;">Capital Empire</div>
+  <div id="loading-error" style="color:var(--crimson);font-size:12px;display:none;max-width:300px;text-align:center;"></div>
+  <button class="auth-btn secondary" id="loading-skip" style="display:none;width:auto;padding:8px 20px;"><i class="fas fa-forward"></i> Continue Offline</button>
+</div>
+
+<div class="modal-bg" id="modal-auth"><div class="modal" style="max-width:420px"><div class="modal-head"><div class="modal-title"><i class="fas fa-user"></i> Account</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div><div class="modal-body" id="auth-body"></div></div></div>
+
+<div class="game">
+  <header class="hud">
+    <div class="brand">
+      <div class="brand-mark">C</div>
+      <div class="brand-text">CAPITAL <span>EMPIRE</span><small>Tycoon</small></div>
+    </div>
+    <div class="hud-stats">
+      <div class="stat stat-money"><div class="stat-label">Balance</div><div class="stat-value" id="hud-money">$0</div></div>
+      <div class="stat stat-income"><div class="stat-label">Per Second</div><div class="stat-value" id="hud-income">$0</div></div>
+      <div class="stat stat-prestige"><div class="stat-label">IPO Multiplier</div><div class="stat-value" id="hud-prestige">1.00x</div></div>
+      <div class="boost-indicator" id="boost-indicator"><i class="fas fa-bolt"></i><span id="boost-text">2x · 30s</span></div>
+    </div>
+    <div class="hud-actions">
+      <button class="icon-btn" id="btn-market" title="Trade Market"><i class="fas fa-arrow-right-arrow-left"></i></button>
+      <button class="icon-btn" id="btn-arcade" title="Arcade"><i class="fas fa-gamepad"></i></button>
+      <button class="icon-btn" id="btn-collection" title="Collection"><i class="fas fa-book"></i></button>
+      <button class="icon-btn" id="btn-leaderboard" title="Leaderboard"><i class="fas fa-trophy"></i></button>
+      <button class="icon-btn" id="btn-achievements" title="Achievements"><i class="fas fa-medal"></i></button>
+      <button class="icon-btn" id="btn-settings" title="Settings"><i class="fas fa-cog"></i></button>
+    </div>
+  </header>
+
+  <main class="main">
+    <aside class="panel">
+      <div class="clicker-section">
+        <button class="click-btn" id="click-btn">
+          <span><span class="amount" id="click-amount-display">$1</span><span class="label">TAP TO EARN</span></span>
+        </button>
+        <div class="click-info">Each tap earns <b id="click-amount-text">$1</b></div>
+        <button class="upgrade-btn" id="upgrade-click">
+          <div class="uc-label">Upgrade Tap Power<small>+$1 per tap · Lv <span id="click-level">1</span></small></div>
+          <div class="uc-cost" id="click-cost">100</div>
+        </button>
+        <button class="upgrade-btn auto" id="upgrade-auto">
+          <div class="uc-label">Auto-Tapper<small>+1 tap/sec · Lv <span id="auto-level">0</span></small></div>
+          <div class="uc-cost" id="auto-cost">1000</div>
+        </button>
+      </div>
+      <div class="qstats" id="qstats"></div>
+      <div class="daily-bonus">
+        <button class="daily-bonus-btn" id="daily-bonus-btn">
+          <div class="daily-icon"><i class="fas fa-gift"></i></div>
+          <div class="daily-info"><div class="daily-title">Daily Bonus</div><div class="daily-sub" id="daily-sub">Available now!</div></div>
+          <div class="daily-reward" id="daily-reward">$100</div>
+        </button>
+      </div>
+      <div class="ach-mini">
+        <div class="ach-mini-head"><span>Achievements</span><span><span id="ach-count">0</span>/<span id="ach-total">24</span></span></div>
+        <div class="ach-grid" id="ach-grid"></div>
+      </div>
+    </aside>
+
+    <section class="panel land-section">
+      <div class="land-head">
+        <div class="land-title"><i class="fas fa-map-location-dot"></i> Financial District</div>
+        <div class="land-info">
+          <div><b id="grid-used">0</b>/<span id="grid-cap">9</span> lots</div><div class="sep">•</div>
+          <div><b id="grid-income">$0</b>/s</div>
+        </div>
+      </div>
+      <div class="land-grid-wrap" id="grid-wrap">
+        <div class="placing-banner" id="placing-banner">
+          <i class="fas fa-map-pin"></i><span>Click a lot to place <b id="placing-name">—</b></span>
+          <button id="cancel-placing"><i class="fas fa-xmark"></i></button>
+        </div>
+        <div class="land-grid" id="grid"></div>
+      </div>
+      <div class="expand-bar">
+        <div class="expand-info">Expand your district.<br>Next: <b id="next-grid">4×4</b> · Cost: <b class="cost" id="next-cost">$2,000</b></div>
+        <div class="save-indicator" id="save-indicator"><i class="fas fa-cloud"></i><span id="save-ind-text">Auto-save</span></div>
+        <button class="btn" id="expand-btn"><i class="fas fa-expand"></i> Expand</button>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="tabs">
+        <button class="tab active" data-tab="shop"><i class="fas fa-store"></i> Shop</button>
+        <button class="tab" data-tab="inv"><i class="fas fa-box"></i> Items <span class="badge" id="inv-badge" style="display:none">0</span></button>
+        <button class="tab" data-tab="history"><i class="fas fa-clock-rotate-left"></i> History</button>
+      </div>
+      <div class="panel-body">
+        <div id="tab-shop"><div class="crate-list" id="crate-list"></div></div>
+        <div id="tab-inv" style="display:none"><div class="inv-list" id="inv-list"></div></div>
+        <div id="tab-history" style="display:none"><div class="history-list" id="history-list"></div></div>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<div class="modal-bg" id="modal-leaderboard"><div class="modal"><div class="modal-head"><div class="modal-title"><i class="fas fa-trophy"></i> Global Leaderboard</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div><div class="modal-body" id="lb-body"></div></div></div>
+<div class="modal-bg" id="modal-achievements"><div class="modal"><div class="modal-head"><div class="modal-title"><i class="fas fa-medal"></i> Achievements</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div><div class="modal-body" id="ach-body"></div></div></div>
+<div class="modal-bg" id="modal-settings"><div class="modal"><div class="modal-head"><div class="modal-title"><i class="fas fa-cog"></i> Settings</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div><div class="modal-body" id="settings-body"></div></div></div>
+<div class="modal-bg" id="modal-arcade"><div class="modal"><div class="modal-head"><div class="modal-title"><i class="fas fa-gamepad"></i> Capital Arcade</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div><div class="modal-body" id="arcade-body"></div></div></div>
+<div class="modal-bg" id="modal-collection"><div class="modal"><div class="modal-head"><div class="modal-title"><i class="fas fa-book"></i> Collection Index</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div><div class="modal-body" id="coll-body"></div></div></div>
+<div class="modal-bg" id="modal-building"><div class="modal" style="max-width:420px"><div class="modal-head"><div class="modal-title"><i class="fas fa-building"></i> Property Details</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div><div class="modal-body" id="bm-body"></div></div></div>
+<div class="modal-bg" id="modal-prestige"><div class="modal" style="max-width:420px"><div class="modal-head"><div class="modal-title"><i class="fas fa-arrow-up-from-bracket"></i> Go Public (Prestige)</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div><div class="modal-body" id="pres-body"></div></div></div>
+<div class="modal-bg" id="modal-market"><div class="modal"><div class="modal-head"><div class="modal-title"><i class="fas fa-arrow-right-arrow-left"></i> Trade Market</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div><div class="modal-body" id="market-body"></div></div></div>
+
+<div class="modal-bg" id="modal-game">
+  <div class="modal game-modal">
+    <div class="modal-head"><div class="modal-title" id="game-title"><i class="fas fa-gamepad"></i> Game</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div>
+    <div style="position:relative; padding: 16px;">
+      <div class="game-score" id="game-score" style="display:none;">0</div>
+      <canvas class="game-canvas" id="game-canvas" width="440" height="360"></canvas>
+      <div class="game-overlay" id="game-overlay">
+        <h3 id="game-overlay-title">Flappy Crate</h3>
+        <p id="game-overlay-desc">Tap or press Space to fly. Avoid the pipes!</p>
+        <button class="btn" id="game-start-btn"><i class="fas fa-play"></i> Start Game</button>
+      </div>
+    </div>
+    <div class="game-instructions" id="game-instructions">Tap/Click or press Space to play.</div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-crate">
+  <div class="modal crate-modal">
+    <div class="modal-head"><div class="modal-title"><i class="fas fa-box-open"></i> Opening Crate</div><button class="modal-close" data-close><i class="fas fa-xmark"></i></button></div>
+    <div style="position:relative; background: var(--bg-2); padding: 20px 0;">
+      <div class="roulette-pointer"></div>
+      <div class="roulette-viewport">
+        <div class="roulette-strip" id="roulette-strip"></div>
+      </div>
+    </div>
+    <div class="crate-result-info" id="crate-result-info">
+      <div class="result-rarity" id="result-rarity">RARE</div>
+      <div class="result-name" id="result-name">Building</div>
+      <div class="result-income" id="result-income">10</div>
+    </div>
+    <div class="crate-actions">
+      <button class="btn btn-ghost" data-close>Close</button>
+      <button class="btn" id="crate-place">Place Building</button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+<div class="help-tip" id="help-tip"></div>
+
+<script>
+const SUPABASE_URL = 'https://mdeocobsqjhrztbgferz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kZW9jb2JzcWpocnp0YmdmZXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzNDk4NjYsImV4cCI6MjEwMTkyNTg2Nn0.jkNvTma-Xd7KbIxKOJKYUEa5HbPjNGbFgO8W3d_fUnM';
+let supabaseClient = null;
+let supabaseReady = false;
+
+const INCOME_CAP = 1e15;
+
+const BUILDINGS = {
+  atm:       { name: 'ATM Kiosk',           icon: 'fa-credit-card',          rarity: 'common',     income: 0.5 },
+  piggy:     { name: 'Piggy Bank Stand',    icon: 'fa-piggy-bank',           rarity: 'common',     income: 0.3 },
+  corner:    { name: 'Corner Bank',         icon: 'fa-building-columns',     rarity: 'common',     income: 1 },
+  register:  { name: 'Cash Register',       icon: 'fa-cash-register',        rarity: 'common',     income: 0.8 },
+  tipjar:    { name: 'Tip Jar',             icon: 'fa-mug-hot',              rarity: 'common',     income: 1.5 },
+  lemonade:  { name: 'Lemonade Stand',      icon: 'fa-lemon',                rarity: 'common',     income: 2 },
+  newsstand: { name: 'Newsstand',           icon: 'fa-newspaper',            rarity: 'common',     income: 0.4 },
+  vending:   { name: 'Snack Vending',       icon: 'fa-cake-candles',         rarity: 'common',     income: 0.7 },
+  shoeshine: { name: 'Shoe Shine',          icon: 'fa-brush',                rarity: 'common',     income: 0.9 },
+  bakery:    { name: 'Street Bakery',       icon: 'fa-bread-slice',          rarity: 'common',     income: 1.2 },
+  loan:      { name: 'Loan Office',         icon: 'fa-file-contract',        rarity: 'uncommon',   income: 5 },
+  teller:    { name: 'Teller Branch',       icon: 'fa-building',             rarity: 'uncommon',   income: 7 },
+  credit:    { name: 'Credit Union',        icon: 'fa-users',                rarity: 'uncommon',   income: 10 },
+  pawn:      { name: 'Pawn Shop',           icon: 'fa-tag',                  rarity: 'uncommon',   income: 15 },
+  boutique:  { name: 'Boutique Store',      icon: 'fa-bag-shopping',         rarity: 'uncommon',   income: 20 },
+  florist:   { name: 'Florist Shop',        icon: 'fa-leaf',                 rarity: 'uncommon',   income: 6 },
+  artisan:   { name: 'Artisan Bakery',      icon: 'fa-bread-slice',          rarity: 'uncommon',   income: 9 },
+  pharmacy:  { name: 'Pharmacy',            icon: 'fa-prescription-bottle-medical', rarity: 'uncommon', income: 12 },
+  antique:   { name: 'Antique Dealer',      icon: 'fa-hourglass-half',       rarity: 'uncommon',   income: 18 },
+  forex:     { name: 'Forex Bureau',        icon: 'fa-coins',                rarity: 'rare',       income: 50 },
+  stock:     { name: 'Stock Exchange',      icon: 'fa-chart-line',           rarity: 'rare',       income: 40 },
+  invest:    { name: 'Investment Firm',     icon: 'fa-briefcase',            rarity: 'rare',       income: 75 },
+  insurance: { name: 'Insurance Co.',       icon: 'fa-shield-halved',        rarity: 'rare',       income: 60 },
+  realestate:{ name: 'Real Estate Co.',     icon: 'fa-house-chimney',        rarity: 'rare',       income: 90 },
+  fintech:   { name: 'FinTech Startup',     icon: 'fa-mobile-screen-button', rarity: 'rare',       income: 45 },
+  goldsmith: { name: 'Goldsmith',           icon: 'fa-ring',                 rarity: 'rare',       income: 55 },
+  auction:   { name: 'Auction House',       icon: 'fa-gavel',                rarity: 'rare',       income: 65 },
+  factoring: { name: 'Factoring Co.',       icon: 'fa-file-invoice-dollar',  rarity: 'rare',       income: 85 },
+  venture:   { name: 'Venture Capital',     icon: 'fa-rocket',               rarity: 'epic',       income: 300 },
+  hedge:     { name: 'Hedge Fund HQ',       icon: 'fa-chart-pie',            rarity: 'epic',       income: 350 },
+  central:   { name: 'Central Bank',        icon: 'fa-landmark',             rarity: 'epic',       income: 500 },
+  private:   { name: 'Private Bank',        icon: 'fa-money-check-dollar',   rarity: 'epic',       income: 450 },
+  casino:    { name: 'Luxury Casino',       icon: 'fa-dice',                 rarity: 'epic',       income: 600 },
+  megamall:  { name: 'Mega Mall',           icon: 'fa-shop',                 rarity: 'epic',       income: 320 },
+  yacht:     { name: 'Yacht Broker',        icon: 'fa-sailboat',             rarity: 'epic',       income: 380 },
+  media:     { name: 'Media Empire',        icon: 'fa-tv',                   rarity: 'epic',       income: 450 },
+  energy:    { name: 'Energy Trading',      icon: 'fa-bolt',                 rarity: 'epic',       income: 550 },
+  wallst:    { name: 'Wall Street Tower',   icon: 'fa-city',                 rarity: 'legendary',  income: 2500 },
+  mint:      { name: 'Global Mint',         icon: 'fa-sack-dollar',          rarity: 'legendary',  income: 4000 },
+  federal:   { name: 'Federal Reserve',     icon: 'fa-money-bill-trend-up',  rarity: 'legendary',  income: 6000 },
+  sovereign: { name: 'Sovereign Wealth',    icon: 'fa-crown',                rarity: 'legendary',  income: 8000 },
+  diamond:   { name: 'Diamond Exchange',    icon: 'fa-gem',                  rarity: 'legendary',  income: 10000 },
+  skyscraper:{ name: 'Skyline Tower',       icon: 'fa-building-flag',        rarity: 'legendary',  income: 3000 },
+  vault:     { name: 'Fort Knox Vault',     icon: 'fa-vault',                rarity: 'legendary',  income: 4500 },
+  alphafund: { name: 'Alpha Fund',          icon: 'fa-arrow-trend-up',       rarity: 'legendary',  income: 5500 },
+  globalbank:{ name: 'Global Banking',      icon: 'fa-globe',                rarity: 'legendary',  income: 7500 },
+  quantum:   { name: 'Quantum Bank',        icon: 'fa-atom',                 rarity: 'mythic',     income: 50000 },
+  atlantis:  { name: 'Atlantis Treasury',   icon: 'fa-water',                rarity: 'mythic',     income: 75000 },
+  elven:     { name: 'Elven Vault',         icon: 'fa-leaf',                 rarity: 'mythic',     income: 100000 },
+  dragon:    { name: 'Dragon Hoard',        icon: 'fa-dragon',               rarity: 'mythic',     income: 150000 },
+  titan:     { name: 'Titan Vault',         icon: 'fa-mountain',             rarity: 'mythic',     income: 200000 },
+  spacetime: { name: 'Spacetime Vault',     icon: 'fa-spa',                  rarity: 'mythic',     income: 60000 },
+  lunar:     { name: 'Lunar Treasury',      icon: 'fa-moon',                 rarity: 'mythic',     income: 90000 },
+  solar:     { name: 'Solar Reserve',       icon: 'fa-sun',                  rarity: 'mythic',     income: 120000 },
+  crystal:   { name: 'Crystal Vault',       icon: 'fa-gem',                  rarity: 'mythic',     income: 170000 },
+  galaxy:    { name: 'Galactic Reserve',    icon: 'fa-meteor',               rarity: 'cosmic',     income: 1000000 },
+  universe:  { name: 'Universe Mint',       icon: 'fa-infinity',             rarity: 'cosmic',     income: 2500000 },
+  multiverse:{ name: 'Multiverse Exchange', icon: 'fa-network-wired',        rarity: 'cosmic',     income: 5000000 },
+  infinity:  { name: 'Infinity Bank',       icon: 'fa-star-of-life',         rarity: 'cosmic',     income: 15000000 },
+  nebula:    { name: 'Nebula Treasury',     icon: 'fa-cloud',                rarity: 'cosmic',     income: 30000000 },
+  comet:     { name: 'Comet Reserve',       icon: 'fa-comet',                rarity: 'cosmic',     income: 1500000 },
+  planet:    { name: 'Planetary Mint',      icon: 'fa-earth-americas',       rarity: 'cosmic',     income: 4000000 },
+  warp:      { name: 'Warp Exchange',       icon: 'fa-hurricane',            rarity: 'cosmic',     income: 9000000 },
+  aurora:    { name: 'Aurora Vault',        icon: 'fa-icons',                rarity: 'cosmic',     income: 20000000 },
+  godhand:   { name: 'Hand of God Bank',    icon: 'fa-hand-sparkles',        rarity: 'divine',     income: 200000000 },
+  olympus:   { name: 'Mount Olympus Vault', icon: 'fa-mountain-sun',         rarity: 'divine',     income: 500000000 },
+  valhalla:  { name: 'Valhalla Treasury',   icon: 'fa-shield-cat',           rarity: 'divine',     income: 1000000000 },
+  eden:      { name: 'Garden of Eden Mint', icon: 'fa-tree',                 rarity: 'divine',     income: 2500000000 },
+  apocalypse:{ name: 'Apocalypse Vault',    icon: 'fa-bolt-lightning',       rarity: 'divine',     income: 5000000000 },
+  temple:    { name: 'Temple of Wealth',    icon: 'fa-church',               rarity: 'divine',     income: 300000000 },
+  heaven:    { name: 'Heavenly Bank',       icon: 'fa-cloud-sun',            rarity: 'divine',     income: 700000000 },
+  pegasus:   { name: 'Pegasus Vault',       icon: 'fa-horse',                rarity: 'divine',     income: 1500000000 },
+  throne:    { name: 'Aurum Throne',        icon: 'fa-chair',                rarity: 'divine',     income: 3500000000 },
+  singularity:{name:'Singularity Core',     icon: 'fa-bullseye',             rarity: 'celestial',  income: 30000000000 },
+  bigbang:   { name: 'Big Bang Forge',      icon: 'fa-explosion',            rarity: 'celestial',  income: 80000000000 },
+  darkmatter:{ name: 'Dark Matter Bank',    icon: 'fa-circle-notch',         rarity: 'celestial',  income: 200000000000 },
+  wormhole:  { name: 'Wormhole Exchange',   icon: 'fa-rotate',               rarity: 'celestial',  income: 600000000000 },
+  supernova: { name: 'Supernova Mint',      icon: 'fa-sun',                  rarity: 'celestial',  income: 1500000000000 },
+  quasar:    { name: 'Quasar Core',         icon: 'fa-bolt-lightning',       rarity: 'celestial',  income: 50000000000 },
+  pulsar:    { name: 'Pulsar Bank',         icon: 'fa-wave-square',          rarity: 'celestial',  income: 120000000000 },
+  asteroid:  { name: 'Asteroid Vault',      icon: 'fa-globe',                rarity: 'celestial',  income: 300000000000 },
+  galaxytre: { name: 'Galaxy Treasury',     icon: 'fa-milky-way',            rarity: 'celestial',  income: 800000000000 },
+  time:      { name: 'Timeless Treasury',   icon: 'fa-hourglass-half',       rarity: 'eternal',    income: 10000000000000 },
+  void:      { name: 'Void Reserve',        icon: 'fa-circle',               rarity: 'eternal',    income: 50000000000000 },
+  chaos:     { name: 'Chaos Exchange',      icon: 'fa-hurricane',            rarity: 'eternal',    income: 200000000000000 },
+  genesis:   { name: 'Genesis Forge',       icon: 'fa-fire-flame-curved',    rarity: 'eternal',    income: 1000000000000000 },
+  oblivion:  { name: 'Oblivion Vault',      icon: 'fa-skull',                rarity: 'eternal',    income: 5000000000000000 },
+  phoenix:   { name: 'Phoenix Vault',       icon: 'fa-feather',              rarity: 'eternal',    income: 20000000000000 },
+  ledger:    { name: 'Eternal Ledger',      icon: 'fa-book-open',            rarity: 'eternal',    income: 60000000000000 },
+  immortal:  { name: 'Immortal Reserve',    icon: 'fa-shield-heart',         rarity: 'eternal',    income: 150000000000000 },
+  zeropoint: { name: 'Zero Point Bank',     icon: 'fa-clover',               rarity: 'eternal',    income: 400000000000000 },
+  creator:   { name: 'Creator Bank',        icon: 'fa-hand-holding-heart',   rarity: 'omnipotent', income: 50000000000000000 },
+  architect: { name: 'Cosmic Architect',    icon: 'fa-compass-drafting',     rarity: 'omnipotent', income: 300000000000000000 },
+  overlord:  { name: 'Overlord Exchange',   icon: 'fa-chess-king',           rarity: 'omnipotent', income: 2000000000000000000 },
+  deity:     { name: 'Deity Reserve',       icon: 'fa-star-and-crescent',    rarity: 'omnipotent', income: 15000000000000000000 },
+  primordial:{ name: 'Primordial Forge',    icon: 'fa-volcano',              rarity: 'omnipotent', income: 100000000000000000000 },
+  multiversevault:{ name: 'Multiverse Vault', icon: 'fa-globe-europe',       rarity: 'omnipotent', income: 500000000000000 },
+  reality:   { name: 'Reality Forge',       icon: 'fa-wand-magic-sparkles',  rarity: 'omnipotent', income: 600000000000000 },
+  absolutevault:{ name: 'Absolute Vault',   icon: 'fa-magnifying-glass',     rarity: 'omnipotent', income: 700000000000000 },
+  supremecore:{ name: 'Supreme Core',       icon: 'fa-gem',                  rarity: 'omnipotent', income: 800000000000000 },
+  ascension: { name: 'Ascension Core',      icon: 'fa-angles-up',            rarity: 'transcendental', income: 1000000000000000000000 },
+  nirvana:   { name: 'Nirvana Treasury',    icon: 'fa-dharmachakra',         rarity: 'transcendental', income: 10000000000000000000000 },
+  enlightenment:{name:'Enlightenment Bank', icon: 'fa-lightbulb',            rarity: 'transcendental', income: 100000000000000000000000 },
+  omega:     { name: 'Omega Point',         icon: 'fa-record-vinyl',         rarity: 'transcendental', income: 1000000000000000000000000 },
+  absolute:  { name: 'Absolute Zero',       icon: 'fa-snowflake',            rarity: 'transcendental', income: 10000000000000000000000000 },
+  transcend: { name: 'Transcendent Ledger', icon: 'fa-feather-pointed',      rarity: 'transcendental', income: 1000000000000000 },
+  hansen:    { name: 'HANSEN',              icon: 'fa-star',                 rarity: 'hansen',     income: 1000000000000000 },
+};
+
+const CRATES = {
+  basic:     { name: 'Basic Crate',      price: 100,             color: '#9ca3af', icon: 'fa-box',              odds: { common: 0.80, uncommon: 0.18, rare: 0.02, epic: 0, legendary: 0, mythic: 0, cosmic: 0, divine: 0, celestial: 0, eternal: 0, omnipotent: 0, transcendental: 0 } },
+  premium:   { name: 'Premium Crate',    price: 1000,            color: '#4ade80', icon: 'fa-box-open',         odds: { common: 0.45, uncommon: 0.40, rare: 0.12, epic: 0.03, legendary: 0, mythic: 0, cosmic: 0, divine: 0, celestial: 0, eternal: 0, omnipotent: 0, transcendental: 0 } },
+  golden:    { name: 'Golden Crate',     price: 15000,           color: '#38bdf8', icon: 'fa-treasure-chest',   odds: { common: 0.10, uncommon: 0.35, rare: 0.35, epic: 0.15, legendary: 0.05, mythic: 0, cosmic: 0, divine: 0, celestial: 0, eternal: 0, omnipotent: 0, transcendental: 0 } },
+  diamond:   { name: 'Diamond Crate',    price: 200000,          color: '#c084fc', icon: 'fa-gem',              odds: { common: 0, uncommon: 0.10, rare: 0.35, epic: 0.35, legendary: 0.15, mythic: 0.05, cosmic: 0, divine: 0, celestial: 0, eternal: 0, omnipotent: 0, transcendental: 0 } },
+  royal:     { name: 'Royal Crate',      price: 3000000,         color: '#fbbf24', icon: 'fa-crown',            odds: { common: 0, uncommon: 0, rare: 0.15, epic: 0.40, legendary: 0.30, mythic: 0.15, cosmic: 0, divine: 0, celestial: 0, eternal: 0, omnipotent: 0, transcendental: 0 } },
+  mythic:    { name: 'Mythic Crate',     price: 45000000,        color: '#f43f5e', icon: 'fa-fire',             odds: { common: 0, uncommon: 0, rare: 0, epic: 0.20, legendary: 0.40, mythic: 0.30, cosmic: 0.10, divine: 0, celestial: 0, eternal: 0, omnipotent: 0, transcendental: 0 } },
+  cosmic:    { name: 'Cosmic Crate',     price: 800000000,       color: '#d946ef', icon: 'fa-meteor',           odds: { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0.25, mythic: 0.40, cosmic: 0.30, divine: 0.05, celestial: 0, eternal: 0, omnipotent: 0, transcendental: 0 } },
+  divine:    { name: 'Divine Crate',     price: 15000000000,     color: '#ff6b35', icon: 'fa-hand-sparkles',    odds: { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0, mythic: 0.20, cosmic: 0.40, divine: 0.30, celestial: 0.10, eternal: 0, omnipotent: 0, transcendental: 0 } },
+  celestial: { name: 'Celestial Crate',  price: 350000000000,    color: '#00f5ff', icon: 'fa-bullseye',         odds: { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0, mythic: 0, cosmic: 0.20, divine: 0.40, celestial: 0.30, eternal: 0.10, omnipotent: 0, transcendental: 0 } },
+  eternal:   { name: 'Eternal Crate',    price: 8000000000000,   color: '#ffffff', icon: 'fa-hourglass-half',   odds: { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0, mythic: 0, cosmic: 0, divine: 0.20, celestial: 0.40, eternal: 0.30, omnipotent: 0.10, transcendental: 0 } },
+  omnipotent:{ name: 'Omnipotent Crate', price: 250000000000000, color: '#ffd700', icon: 'fa-chess-king',       odds: { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0, mythic: 0, cosmic: 0, divine: 0, celestial: 0.20, eternal: 0.40, omnipotent: 0.30, transcendental: 0.10 } },
+  transcendental:{ name: 'Transcendental Crate', price: 10000000000000000, color: '#ff00ff', icon: 'fa-angles-up', odds: { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0, mythic: 0, cosmic: 0, divine: 0, celestial: 0, eternal: 0.20, omnipotent: 0.40, transcendental: 0.40 } },
+};
+
+const RARITY_COLORS = {
+  common: '#9ca3af', uncommon: '#4ade80', rare: '#38bdf8', epic: '#c084fc',
+  legendary: '#fbbf24', mythic: '#f43f5e', cosmic: '#d946ef', divine: '#ff6b35',
+  celestial: '#00f5ff', eternal: '#ffffff', omnipotent: '#ffd700', transcendental: '#ff00ff',
+  hansen: '#ff00ff'
+};
+const RARITY_LABELS = {
+  common: 'COMMON', uncommon: 'UNCOMMON', rare: 'RARE', epic: 'EPIC',
+  legendary: 'LEGENDARY', mythic: 'MYTHIC', cosmic: 'COSMIC', divine: 'DIVINE',
+  celestial: 'CELESTIAL', eternal: 'ETERNAL', omnipotent: 'OMNIPOTENT', transcendental: 'TRANSCENDENTAL',
+  hansen: 'HANSEN'
+};
+const RARITY_BG = {
+  common: 'rgba(156,163,175,0.1)', uncommon: 'rgba(74,222,128,0.1)', rare: 'rgba(56,189,248,0.1)',
+  epic: 'rgba(192,132,252,0.1)', legendary: 'rgba(251,191,36,0.1)', mythic: 'rgba(244,63,94,0.1)',
+  cosmic: 'rgba(217,70,239,0.1)', divine: 'rgba(255,107,53,0.1)', celestial: 'rgba(0,245,255,0.1)',
+  eternal: 'rgba(255,255,255,0.1)', omnipotent: 'rgba(255,215,0,0.1)', transcendental: 'rgba(255,0,255,0.1)',
+  hansen: 'rgba(255,0,255,0.15)'
+};
+
+const GRID_SIZES = [3, 4, 5, 6, 7, 8, 9, 10];
+const GRID_COSTS = [0, 2000, 12000, 75000, 500000, 3500000, 25000000, 200000000, 2000000000, 25000000000];
+const DAY_MS = 86400000;
+const DAILY_REWARDS = [100,150,200,300,500,750,1000,1500,2000,3000,5000,7500,10000,15000,25000,50000,75000,100000,150000,250000,500000,750000,1000000,1500000,2500000,5000000,7500000,10000000];
+
+let lastFrame = 0;
+let uiCounter = 0;
+
+const ACHIEVEMENTS = [
+  { id: 'first_click', name: 'First Steps', desc: 'Click once.', icon: 'fa-hand-pointer', check: g => g.stats.clicks >= 1 },
+  { id: 'clicker_100', name: 'Finger Gym', desc: 'Click 100 times.', icon: 'fa-hand-pointer', check: g => g.stats.clicks >= 100 },
+  { id: 'clicker_1k', name: 'Click Master', desc: 'Click 1,000 times.', icon: 'fa-hand-pointer', check: g => g.stats.clicks >= 1000 },
+  { id: 'clicker_10k', name: 'Click God', desc: 'Click 10,000 times.', icon: 'fa-hand-pointer', check: g => g.stats.clicks >= 10000 },
+  { id: 'rich_1k', name: 'Small Fortune', desc: 'Earn $1,000 total.', icon: 'fa-sack-dollar', check: g => g.totalEarned >= 1000 },
+  { id: 'rich_1m', name: 'Millionaire', desc: 'Earn $1,000,000 total.', icon: 'fa-sack-dollar', check: g => g.totalEarned >= 1e6 },
+  { id: 'rich_1b', name: 'Billionaire', desc: 'Earn $1B total.', icon: 'fa-sack-dollar', check: g => g.totalEarned >= 1e9 },
+  { id: 'rich_1t', name: 'Trillionaire', desc: 'Earn $1T total.', icon: 'fa-sack-dollar', check: g => g.totalEarned >= 1e12 },
+  { id: 'first_building', name: 'Landowner', desc: 'Place your first building.', icon: 'fa-building', check: g => g.stats.buildingsPlaced >= 1 },
+  { id: 'buildings_10', name: 'Developer', desc: 'Place 10 buildings.', icon: 'fa-building', check: g => g.stats.buildingsPlaced >= 10 },
+  { id: 'buildings_50', name: 'City Planner', desc: 'Place 50 buildings.', icon: 'fa-building', check: g => g.stats.buildingsPlaced >= 50 },
+  { id: 'first_crate', name: 'Gambler', desc: 'Open your first crate.', icon: 'fa-box-open', check: g => g.stats.cratesOpened >= 1 },
+  { id: 'crates_10', name: 'High Roller', desc: 'Open 10 crates.', icon: 'fa-box-open', check: g => g.stats.cratesOpened >= 10 },
+  { id: 'crates_100', name: 'Crate Addict', desc: 'Open 100 crates.', icon: 'fa-box-open', check: g => g.stats.cratesOpened >= 100 },
+  { id: 'first_prestige', name: 'Going Public', desc: 'Prestige once.', icon: 'fa-arrow-up-from-bracket', check: g => g.prestige.points >= 1 },
+  { id: 'prestige_5', name: 'Serial Entrepreneur', desc: 'Prestige 5 times.', icon: 'fa-arrow-up-from-bracket', check: g => g.prestige.points >= 5 },
+  { id: 'first_boost', name: 'Lucky Day', desc: 'Trigger a boost.', icon: 'fa-bolt', check: g => g.stats.boostsTriggered >= 1 },
+  { id: 'daily_7', name: 'Dedicated', desc: 'Claim 7 daily bonuses.', icon: 'fa-gift', check: g => g.stats.dailyClaimed >= 7 },
+  { id: 'daily_30', name: 'Committed', desc: 'Claim 30 daily bonuses.', icon: 'fa-gift', check: g => g.stats.dailyClaimed >= 30 },
+  { id: 'first_legendary', name: 'Legendary', desc: 'Get a legendary building.', icon: 'fa-star', check: g => hasRarity(g, 'legendary') },
+  { id: 'first_mythic', name: 'Mythic', desc: 'Get a mythic building.', icon: 'fa-dragon', check: g => hasRarity(g, 'mythic') },
+  { id: 'first_cosmic', name: 'Cosmic', desc: 'Get a cosmic building.', icon: 'fa-meteor', check: g => hasRarity(g, 'cosmic') },
+  { id: 'grid_max', name: 'Empire', desc: 'Expand to max grid size.', icon: 'fa-expand', check: g => g.gridIndex >= GRID_SIZES.length - 1 },
+];
+
+let game = createNewGame();
+
+function createNewGame() {
+  return {
+    version: 7, money: 0, totalEarned: 0, clickPower: 1, clickLevel: 1, clickCost: 100,
+    autoTapper: 0, autoCost: 1000,
+    grid: new Array(9).fill(null), gridIndex: 0, inventory: [], pullHistory: [],
+    stats: { clicks: 0, cratesOpened: 0, buildingsPlaced: 0, boostsTriggered: 0, dailyClaimed: 0, upgradesBought: 0 },
+    achievements: [], discovered: [], redeemedCodes: [],
+    arcade: { flappy: 0, snake: 0, catcher: 0 },
+    arcadeUpgrades: { flappy: 0, snake: 0, catcher: 0 },
+    settings: { sound: true, notation: 'short', autoSave: true, skipCrateAnim: false },
+    boost: { value: 1, endTime: 0 },
+    daily: { lastClaim: 0, streak: 0 },
+    prestige: { points: 0, multiplier: 1 },
+    playerName: 'Tycoon',
+    market: { listings: [] },
+    hansenPromo: false,
+    lastTick: Date.now(), lastSave: Date.now(), lastSaveFlash: 0, lastBoost: Date.now(), lastAuto: Date.now(),
+  };
+}
+
+function fmt(n) {
+  if (n === Infinity) return '∞'; if (n < 0) return '-' + fmt(-n);
+  if (game.settings.notation === 'full') return Math.floor(n).toLocaleString('en-US');
+  if (n < 1000) return n < 10 && n % 1 !== 0 ? n.toFixed(1) : Math.floor(n).toString();
+  const units = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc', 'Ud', 'Dd', 'Td', 'Qad', 'Qid', 'Sxd', 'Spd', 'Ocd', 'Nod', 'Vg', 'Uvg', 'Dvg', 'Tvg', 'Qvg', 'Qnvg', 'Sxvg', 'Spvg', 'Ocvg', 'Novg', 'Tg'];
+  let u = 0; while (n >= 1000 && u < units.length - 1) { n /= 1000; u++; }
+  return n.toFixed(n < 10 ? 2 : n < 100 ? 1 : 0) + units[u];
+}
+function money(n) { return '$' + fmt(n); }
+function formatTime(ms) {
+  let s = Math.floor(ms / 1000);
+  let h = Math.floor(s / 3600); s %= 3600;
+  let m = Math.floor(s / 60); s %= 60;
+  return `${h}h ${m}m ${s}s`;
+}
+function buildingInc(b, level) {
+  let v = b.income * level * game.prestige.multiplier * (1 + game.discovered.length * 0.02);
+  if (game.boost.value > 1 && Date.now() < game.boost.endTime) v *= game.boost.value;
+  return Math.min(v, INCOME_CAP);
+}
+function getIncome(g = game) {
+  let total = 0;
+  for (const cell of g.grid) if (cell) total += buildingInc(BUILDINGS[cell.id], cell.level);
+  return total;
+}
+function getBaseIncome() {
+  let total = 0;
+  for (const cell of game.grid) if (cell) total += buildingInc(BUILDINGS[cell.id], cell.level);
+  return total;
+}
+function getGridSize() { return GRID_SIZES[game.gridIndex]; }
+function getGridCap() { return getGridSize() ** 2; }
+function getGridUsed() { return game.grid.filter(c => c).length; }
+function hasRarity(g, rarity) { return g.grid.some(c => c && BUILDINGS[c.id].rarity === rarity) || g.inventory.some(id => BUILDINGS[id].rarity === rarity); }
+function isGridFull(g) { return g.grid.every(c => c !== null); }
+function getLevel(g = game) { return Math.floor(Math.log10(g.totalEarned + 1) * 2.5) + 1; }
+function getExpandCost() { return GRID_COSTS[game.gridIndex + 1] || Infinity; }
+function getUpgradeCost(cell) { return Math.floor(BUILDINGS[cell.id].income * 25 * Math.pow(cell.level, 1.8) * (1 + game.discovered.length * 0.02)); }
+function getSellValue(cell) { return Math.floor(BUILDINGS[cell.id].income * 10 * cell.level * game.prestige.multiplier); }
+function getPrestigeGain() { return Math.floor(Math.pow(game.totalEarned / 1e6, 0.4)); }
+function getPrestigeMult() { return 1 + game.prestige.points * 0.1; }
+
+let audioCtx = null;
+function getAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+function playTone(freq, dur, type = 'sine', vol = 0.06, delay = 0) {
+  if (!game.settings.sound) return;
+  try {
+    const ctx = getAudio(); const t = ctx.currentTime + delay;
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = type; osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(vol, t + 0.01); gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(gain); gain.connect(ctx.destination); osc.start(t); osc.stop(t + dur + 0.05);
+  } catch (e) {}
+}
+const sndClick = () => playTone(700 + Math.random() * 80, 0.05, 'sine', 0.04);
+const sndBuy   = () => { playTone(500, 0.07, 'square', 0.05); playTone(800, 0.09, 'sine', 0.05, 0.05); };
+const sndError = () => playTone(180, 0.13, 'sawtooth', 0.04);
+const sndTick  = () => playTone(1200, 0.02, 'square', 0.02);
+function sndReveal(rarity) {
+  const notes = {
+    common: [440], uncommon: [523, 659], rare: [523, 659, 784], epic: [523, 659, 784, 1047],
+    legendary: [523, 659, 784, 1047, 1319, 1568], mythic: [523, 659, 784, 1047, 1319, 1568, 1976],
+    cosmic: [523, 659, 784, 1047, 1319, 1568, 1976, 2093],
+    divine: [523, 659, 784, 1047, 1319, 1568, 1976, 2093, 2637],
+    celestial: [523, 659, 784, 1047, 1319, 1568, 1976, 2093, 2637, 3136],
+    eternal: [523, 659, 784, 1047, 1319, 1568, 1976, 2093, 2637, 3136, 3951],
+    omnipotent: [523, 659, 784, 1047, 1319, 1568, 1976, 2093, 2637, 3136, 3951, 4186],
+    transcendental: [523, 659, 784, 1047, 1319, 1568, 1976, 2093, 2637, 3136, 3951, 4186, 5274],
+    hansen: [523, 659, 784, 1047, 1319, 1568, 1976, 2093, 2637, 3136, 3951, 4186, 5274, 6272, 7902, 8372]
+  };
+  const arr = notes[rarity] || notes['legendary'];
+  arr.forEach((f, i) => playTone(f, 0.35, 'triangle', 0.07, i * 0.07));
+}
+const sndPlace    = () => { playTone(350, 0.08, 'sine', 0.06); playTone(220, 0.12, 'sine', 0.05, 0.04); };
+const sndAch      = () => [523, 659, 784, 1047].forEach((f, i) => playTone(f, 0.2, 'triangle', 0.06, i * 0.06));
+const sndUpgrade  = () => { playTone(600, 0.07, 'sine', 0.06); playTone(900, 0.1, 'sine', 0.06, 0.05); };
+const sndBoost    = () => [440, 554, 659, 880].forEach((f, i) => playTone(f, 0.25, 'sawtooth', 0.05, i * 0.05));
+const sndDaily    = () => [659, 784, 1047, 1319].forEach((f, i) => playTone(f, 0.2, 'triangle', 0.06, i * 0.07));
+const sndPrestige = () => [523, 659, 784, 1047, 1319, 1568, 2093].forEach((f, i) => playTone(f, 0.3, 'triangle', 0.08, i * 0.08));
+const sndCode     = () => [784, 1047, 1319, 1568, 2093].forEach((f, i) => playTone(f, 0.2, 'sine', 0.07, i * 0.06));
+const sndArcade   = () => [523, 587, 659, 698, 784, 880, 988, 1047].forEach((f, i) => playTone(f, 0.1, 'square', 0.04, i * 0.05));
+
+async function save() {
+  if (!game.settings.autoSave || !supabaseReady) return;
+  try {
+    const saveData = JSON.parse(JSON.stringify(game));
+    saveData.lastSave = Date.now();
+    await supabaseClient.rpc('save_game', { p_game_data: saveData });
+    game.lastSave = Date.now();
+    game.lastSaveFlash = Date.now();
+  } catch (e) { console.error("Cloud save failed", e); }
+}
+
+async function load() {
+  try {
+    const { data, error } = await supabaseClient.rpc('get_game');
+    if (error || !data) { console.error('Load error:', error); return false; }
+    const loaded = (typeof data === 'string') ? JSON.parse(data) : data;
+    if (!loaded || typeof loaded !== 'object') return false;
+    const def = createNewGame();
+    game = Object.assign(def, loaded);
+    game.settings = Object.assign(def.settings, loaded.settings || {});
+    game.stats = Object.assign(def.stats, loaded.stats || {});
+    game.boost = Object.assign(def.boost, loaded.boost || {});
+    game.daily = Object.assign(def.daily, loaded.daily || {});
+    game.prestige = Object.assign(def.prestige, loaded.prestige || {});
+    game.arcade = Object.assign(def.arcade, loaded.arcade || {});
+    game.arcadeUpgrades = Object.assign(def.arcadeUpgrades, loaded.arcadeUpgrades || {});
+    game.market = Object.assign(def.market, loaded.market || {});
+    if (!Array.isArray(game.market.listings)) game.market.listings = [];
+    if (!Array.isArray(game.pullHistory)) game.pullHistory = [];
+    if (!Array.isArray(game.inventory)) game.inventory = [];
+    if (!Array.isArray(game.discovered)) game.discovered = [];
+    if (!Array.isArray(game.redeemedCodes)) game.redeemedCodes = [];
+    if (typeof game.hansenPromo !== 'boolean') game.hansenPromo = false;
+    game.grid = game.grid.map(c => { if (c === null) return null; if (typeof c === 'string') return { id: c, level: 1 }; return c; });
+    if (!game.playerName) game.playerName = 'Tycoon';
+    const offline = Math.min((Date.now() - (loaded.lastSave || Date.now())) / 1000, 3600 * 8);
+    const inc = getIncome() * offline;
+    if (inc > 0) {
+      game.money += inc; game.totalEarned += inc;
+      if (offline > 30) setTimeout(() => toast('Welcome Back!', `Earned ${money(inc)} while away (${Math.floor(offline/60)}m).`, 'fa-clock', '#10d981'), 600);
+    }
+    return true;
+  } catch (e) { console.error("Load failed", e); return false; }
+}
+
+async function hardReset() {
+  try { if (supabaseReady) await supabaseClient.rpc('delete_save'); } catch (e) { console.error('Reset error:', e); }
+  game = createNewGame();
+  renderAll();
+  toast('Game Reset', 'Your empire has been wiped clean.', 'fa-trash', '#ef4458');
+}
+
+function redeemCode() {
+  const input = document.getElementById('promo-input');
+  const code = input.value.toLowerCase().trim();
+  if (!code) return;
+  if (game.redeemedCodes.includes(code)) {
+    toast("Already Redeemed", "You have already used this code.", "fa-circle-exclamation", "#ef4458");
+    return;
+  }
+  let reward = 0, msg = "";
+  if (code === "darren trash and fb and wg") { reward = 1e12; msg = "You received $1,000,000,000,000!"; }
+  else if (code === "hansen") { game.hansenPromo = true; msg = "Hansen Promo armed! Your next crate has an 80% chance to be HANSEN."; }
+  else {
+    toast("Invalid Code", "This promo code does not exist or is expired.", "fa-circle-xmark", "#ef4458");
+    sndError();
+    return;
+  }
+  game.money += reward; game.totalEarned += reward;
+  game.redeemedCodes.push(code);
+  sndCode(); toast("Promo Redeemed!", msg, "fa-gift", "#10d981");
+  if (reward > 0) confetti(window.innerWidth / 2, window.innerHeight / 3, '#10d981');
+  input.value = "";
+  updateHUD(); save();
+}
+
+function toast(title, msg, icon = 'fa-info-circle', color = '#f5c451') {
+  const c = document.getElementById('toasts'); const el = document.createElement('div'); el.className = 'toast';
+  el.style.setProperty('--tc', color); el.style.setProperty('--tbg', color + '22');
+  el.innerHTML = `<div class="toast-icon"><i class="fas ${icon}"></i></div><div class="toast-content"><div class="toast-title">${title}</div><div class="toast-msg">${msg}</div></div>`;
+  c.appendChild(el); setTimeout(() => el.remove(), 4200);
+}
+function clickParticles(e) {
+  const rect = e.currentTarget.getBoundingClientRect(); const cx = rect.left + rect.width / 2; const cy = rect.top + rect.height / 2;
+  const ripple = document.createElement('div'); ripple.className = 'click-ripple'; ripple.style.left = cx + 'px'; ripple.style.top = cy + 'px'; document.body.appendChild(ripple); setTimeout(() => ripple.remove(), 600);
+  for (let i = 0; i < 4; i++) {
+    const p = document.createElement('div'); p.className = 'particle'; p.textContent = '+$' + fmt(game.clickPower * game.prestige.multiplier * (1 + game.discovered.length * 0.02));
+    p.style.left = cx + 'px'; p.style.top = cy + 'px';
+    const angle = (Math.PI * 2 * i) / 4 + Math.random() * 0.5; const dist = 55 + Math.random() * 35;
+    p.style.setProperty('--dx', Math.cos(angle) * dist + 'px'); p.style.setProperty('--dy', Math.sin(angle) * dist - 25 + 'px');
+    document.body.appendChild(p); setTimeout(() => p.remove(), 1000);
+  }
+}
+function confetti(x, y, color) {
+  const colors = [color, '#f5c451', '#10d981', '#38bdf8', '#c084fc', '#f43f5e', '#d946ef'];
+  for (let i = 0; i < 30; i++) {
+    const p = document.createElement('div'); p.className = 'confetti'; p.style.left = x + 'px'; p.style.top = y + 'px';
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    const angle = Math.random() * Math.PI * 2; const dist = 100 + Math.random() * 200;
+    p.style.setProperty('--cx', Math.cos(angle) * dist + 'px'); p.style.setProperty('--cy', Math.sin(angle) * dist + 100 + 'px');
+    p.style.animationDelay = Math.random() * 0.2 + 's'; document.body.appendChild(p); setTimeout(() => p.remove(), 2500);
+  }
+}
+
+function doClick(e) {
+  const earn = game.clickPower * game.prestige.multiplier * (1 + game.discovered.length * 0.02);
+  game.money += earn; game.totalEarned += earn; game.stats.clicks++;
+  clickParticles(e); sndClick(); updateHUD(); checkAchievements();
+}
+function upgradeClick() {
+  if (game.money < game.clickCost) { sndError(); toast('Not Enough Money', `Need ${money(game.clickCost)} to upgrade.`, 'fa-circle-exclamation', '#ef4458'); return; }
+  game.money -= game.clickCost; game.clickLevel++; game.clickPower++;
+  game.clickCost = Math.floor(100 * Math.pow(2.1, game.clickLevel - 1));
+  sndUpgrade(); toast('Tap Power Upgraded!', `Now earning ${money(game.clickPower)} per tap.`, 'fa-arrow-up', '#10d981');
+  renderClicker(); updateHUD();
+}
+function upgradeAuto() {
+  if (game.money < game.autoCost) { sndError(); toast('Not Enough Money', `Need ${money(game.autoCost)} to upgrade.`, 'fa-circle-exclamation', '#ef4458'); return; }
+  game.money -= game.autoCost; game.autoTapper++; game.stats.upgradesBought++;
+  game.autoCost = Math.floor(1000 * Math.pow(3, game.autoTapper));
+  sndUpgrade(); toast('Auto-Tapper Upgraded!', `Now clicking ${game.autoTapper} times per second.`, 'fa-robot', '#10d981');
+  renderClicker(); updateHUD();
+}
+function buyCrate(crateId) {
+  if (crateAnimating) return;
+  const crate = CRATES[crateId];
+  if (game.money < crate.price) { sndError(); toast('Not Enough Money', `Need ${money(crate.price)} for ${crate.name}.`, 'fa-circle-exclamation', '#ef4458'); return; }
+  game.money -= crate.price; game.stats.cratesOpened++; sndBuy();
+  const crateEl = document.querySelector(`.crate[data-crate="${crateId}"]`);
+  if (crateEl) { crateEl.classList.add('clicked'); setTimeout(() => crateEl.classList.remove('clicked'), 550); }
+  openCrateUI(crateId); updateHUD(); renderShop(); checkAchievements();
+}
+function rollCrate(crateId) {
+  if (game.hansenPromo) {
+    game.hansenPromo = false;
+    if (Math.random() < 0.8) return { buildingId: 'hansen', rarity: 'hansen', special: 'hansen' };
+    toast('Hansen Promo', 'The 80% chance missed! Better luck next time.', 'fa-circle-xmark', '#ff00ff');
+  }
+  if (crateId === 'transcendental' && Math.random() < 0.0001) {
+    return { buildingId: 'hansen', rarity: 'hansen', special: 'hansen' };
+  }
+  const crate = CRATES[crateId]; const r = Math.random(); let cum = 0; let rarity = 'common';
+  for (const k of Object.keys(crate.odds)) {
+    cum += crate.odds[k] || 0; if (r <= cum) { rarity = k; break; }
+  }
+  const pool = Object.entries(BUILDINGS).filter(([_, b]) => b.rarity === rarity);
+  const [buildingId] = pool[Math.floor(Math.random() * pool.length)];
+  return { buildingId, rarity };
+}
+let currentCrateResult = null, crateAnimating = false;
+function openCrateUI(crateId) {
+  const crate = CRATES[crateId];
+  const strip = document.getElementById('roulette-strip');
+  const resultInfo = document.getElementById('crate-result-info');
+  const placeBtn = document.getElementById('crate-place');
+
+  resultInfo.classList.remove('show'); resultInfo.style.display = 'none';
+  placeBtn.disabled = true; strip.style.transition = 'none'; strip.style.transform = 'translateX(0)';
+  document.getElementById('modal-crate').classList.add('show');
+  crateAnimating = true; currentCrateResult = null;
+
+  const pool = Object.entries(BUILDINGS).filter(([_, b]) => crate.odds[b.rarity] > 0).map(([id, b]) => ({ id, ...b }));
+  const { buildingId, rarity, special } = rollCrate(crateId);
+  const winB = BUILDINGS[buildingId];
+  if (special === 'hansen' && !pool.some(x => x.id === 'hansen')) pool.push({ id: 'hansen', ...winB });
+  const items = [];
+  for (let i = 0; i < 50; i++) items.push(pool[Math.floor(Math.random() * pool.length)]);
+  const winIndex = 45; items[winIndex] = { id: buildingId, ...winB };
+
+  strip.innerHTML = items.map(it => {
+    const rc = RARITY_COLORS[it.rarity];
+    return `<div class="roulette-item" style="--rc:${rc}"><div class="ri-icon"><i class="fas ${it.icon}"></i></div><div class="ri-name">${it.name}</div><div class="ri-income">$${fmt(it.income)}/s</div></div>`;
+  }).join('');
+  void strip.offsetWidth;
+  const itemWidth = 110 + 12, viewportWidth = strip.parentElement.offsetWidth;
+  const targetX = -((winIndex * itemWidth) + (itemWidth / 2) - (viewportWidth / 2));
+  const duration = game.settings.skipCrateAnim ? 0.15 : (5 + Math.random() * 1.5);
+  strip.style.transition = `transform ${duration}s cubic-bezier(0.15, 0.85, 0.35, 1)`;
+  strip.style.transform = `translateX(${targetX}px)`;
+
+  let tickCount = 0;
+  const tickInterval = setInterval(() => { sndTick(); tickCount++; if (tickCount > 20) clearInterval(tickInterval); }, 200);
+
+  setTimeout(() => {
+    clearInterval(tickInterval);
+    strip.children[winIndex].classList.add('winner');
+    resultInfo.style.setProperty('--rc', RARITY_COLORS[rarity]);
+    document.getElementById('result-rarity').textContent = RARITY_LABELS[rarity];
+    document.getElementById('result-rarity').style.color = RARITY_COLORS[rarity];
+    document.getElementById('result-name').textContent = winB.name;
+    document.getElementById('result-income').textContent = fmt(buildingInc(winB, 1));
+    resultInfo.style.display = 'block'; resultInfo.classList.add('show');
+
+    sndReveal(rarity);
+    if (['epic', 'legendary', 'mythic', 'cosmic', 'divine', 'celestial', 'eternal', 'omnipotent', 'transcendental', 'hansen'].includes(rarity)) {
+      const rect = strip.getBoundingClientRect();
+      confetti(rect.left + rect.width / 2, rect.top + rect.height / 2, RARITY_COLORS[rarity]);
+    }
+    currentCrateResult = buildingId; placeBtn.disabled = false;
+    game.inventory.push(buildingId);
+    game.pullHistory.unshift({ id: buildingId, rarity, crate: crateId, time: Date.now() });
+    if (game.pullHistory.length > 30) game.pullHistory.pop();
+    if (!game.discovered.includes(buildingId)) {
+      game.discovered.push(buildingId);
+      toast('New Discovery!', `${winB.name} added to your Collection Index (+2% global income).`, 'fa-book', RARITY_COLORS[rarity]);
+    }
+    if (special === 'hansen') grantHansen();
+    renderInventory(); updateInvBadge(); renderHistory(); checkAchievements();
+    crateAnimating = false;
+  }, duration * 1000);
+}
+function grantHansen() {
+  const target = 64;
+  while (getGridCap() - getGridUsed() < target && game.gridIndex < GRID_SIZES.length - 1) {
+    game.gridIndex++;
+    const sz = getGridSize(); while (game.grid.length < sz * sz) game.grid.push(null);
+  }
+  let placed = 0;
+  for (let i = 0; i < game.grid.length && placed < target; i++) {
+    if (!game.grid[i]) { game.grid[i] = { id: 'absolute', level: 100 }; placed++; }
+  }
+  for (let i = placed; i < target; i++) game.inventory.push('absolute');
+  toast('HANSEN UNLEASHED!', `64 Absolute Zero Banks (Level 100) added to your district!`, 'fa-star', '#ff00ff');
+  sndPrestige();
+  confetti(window.innerWidth / 2, window.innerHeight / 3, '#ff00ff');
+  renderGrid(); renderExpand(); renderInventory(); updateInvBadge(); updateHUD();
+}
+function placeFromCrate() {
+  if (!currentCrateResult) return;
+  switchTab('inv'); closeModal('modal-crate');
+  setTimeout(() => startPlacing(currentCrateResult), 250);
+}
+let placingId = null;
+let movingFrom = null;
+function startPlacing(buildingId) {
+  if (getGridUsed() >= getGridCap()) { toast('District Full', 'Expand your district or sell a building.', 'fa-circle-exclamation', '#ef4458'); sndError(); return; }
+  placingId = buildingId; movingFrom = null;
+  document.getElementById('placing-banner').classList.add('show');
+  document.getElementById('placing-name').textContent = BUILDINGS[buildingId].name;
+  renderGrid();
+}
+function startMoving(index) {
+  movingFrom = index; placingId = null;
+  document.getElementById('placing-banner').classList.add('show');
+  document.getElementById('placing-name').textContent = BUILDINGS[game.grid[index].id].name;
+  renderGrid();
+}
+function cancelPlacing() { placingId = null; movingFrom = null; document.getElementById('placing-banner').classList.remove('show'); renderGrid(); }
+function placeAt(index) {
+  if (!placingId) return; if (game.grid[index] !== null) return;
+  game.grid[index] = { id: placingId, level: 1 };
+  const i = game.inventory.indexOf(placingId); if (i >= 0) game.inventory.splice(i, 1);
+  game.stats.buildingsPlaced++; sndPlace();
+  const b = BUILDINGS[placingId];
+  toast('Building Placed!', `${b.name} now generating ${money(buildingInc(b,1))}/sec.`, b.icon, RARITY_COLORS[b.rarity]);
+  placingId = null; document.getElementById('placing-banner').classList.remove('show');
+  renderGrid(); renderInventory(); updateInvBadge(); updateHUD(); checkAchievements();
+}
+function moveAt(index) {
+  if (movingFrom === null) return;
+  if (movingFrom === index) { cancelPlacing(); return; }
+  const tmp = game.grid[index];
+  game.grid[index] = game.grid[movingFrom];
+  game.grid[movingFrom] = tmp;
+  sndPlace();
+  const b = BUILDINGS[game.grid[index].id];
+  toast('Building Moved', `${b.name} relocated.`, 'fa-arrows-up-down-left-right', '#38bdf8');
+  cancelPlacing();
+}
+function openBuildingManage(index) {
+  const cell = game.grid[index]; if (!cell) return;
+  const b = BUILDINGS[cell.id]; const rc = RARITY_COLORS[b.rarity];
+  const upCost = getUpgradeCost(cell); const sellVal = getSellValue(cell); const canUpgrade = game.money >= upCost;
+  const nextLevelInc = buildingInc(b, cell.level + 1);
+  const el = document.getElementById('bm-body');
+  el.innerHTML = `
+    <div class="bm-card" style="--rc:${rc}">
+      <div class="bm-banner" style="background: linear-gradient(135deg, ${rc}, transparent);">
+        <i class="fas ${b.icon}"></i>
+      </div>
+      <div class="bm-content">
+        <div class="bm-rarity">${RARITY_LABELS[b.rarity]}</div>
+        <div class="bm-name">${b.name}</div>
+        <div class="bm-stats">
+          <div class="bm-stat-block">
+            <div class="bm-stat-label">Level</div>
+            <div class="bm-stat-val gold">${cell.level}</div>
+          </div>
+          <div class="bm-stat-block">
+            <div class="bm-stat-label">Income</div>
+            <div class="bm-stat-val green">$${fmt(buildingInc(b, cell.level))}/s</div>
+          </div>
+        </div>
+        <div class="bm-level-bar"><div class="bm-level-fill" style="width:${Math.min(100, cell.level * 10)}%"></div></div>
+        <div class="bm-actions">
+          <button class="btn btn-ghost" id="bm-move"><i class="fas fa-arrows-up-down-left-right"></i> Move</button>
+          <button class="btn btn-ghost" id="bm-sell"><i class="fas fa-trash"></i> Sell ($${fmt(sellVal)})</button>
+          <button class="btn" id="bm-upgrade" ${canUpgrade ? '' : 'disabled'}><i class="fas fa-arrow-up"></i> Upgrade ($${fmt(upCost)})</button>
+        </div>
+        <div style="margin-top:12px; font-size:11px; color:var(--muted);">
+          ${canUpgrade ? `Next level income: <b style="color:var(--emerald)">$${fmt(nextLevelInc)}/s</b>` : ''}
+          ${nextLevelInc >= INCOME_CAP ? '<div style="color:var(--gold);margin-top:4px;">Max income cap reached (1000T/s)</div>' : ''}
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('modal-building').classList.add('show');
+  document.getElementById('bm-move').onclick = () => {
+    closeModal('modal-building');
+    startMoving(index);
+  };
+  document.getElementById('bm-sell').onclick = () => {
+    game.grid[index] = null; game.money += sellVal; sndPlace();
+    toast('Building Sold', `${b.name} removed. Refunded ${money(sellVal)}.`, 'fa-trash', '#9ca3af');
+    closeModal('modal-building'); renderGrid(); updateHUD();
+  };
+  document.getElementById('bm-upgrade').onclick = () => {
+    if (game.money < upCost) { sndError(); return; }
+    game.money -= upCost; cell.level++; game.stats.upgradesBought++; sndUpgrade();
+    toast('Building Upgraded!', `${b.name} is now level ${cell.level}.`, 'fa-arrow-up', '#10d981');
+    openBuildingManage(index); renderGrid(); updateHUD(); checkAchievements();
+  };
+}
+function expandGrid() {
+  const cost = getExpandCost();
+  if (game.gridIndex >= GRID_SIZES.length - 1) { toast('Max District', 'Maximum size reached.', 'fa-circle-info', '#9ca3af'); return; }
+  if (game.money < cost) { sndError(); toast('Not Enough Money', `Need ${money(cost)} to expand.`, 'fa-circle-exclamation', '#ef4458'); return; }
+  game.money -= cost; game.gridIndex++;
+  const newSize = getGridSize(); while (game.grid.length < newSize * newSize) game.grid.push(null);
+  sndUpgrade(); toast('District Expanded!', `Now ${newSize}×${newSize} with ${newSize*newSize} lots.`, 'fa-expand', '#10d981');
+  renderGrid(); renderExpand(); updateHUD();
+}
+function canClaimDaily() { return Date.now() - game.daily.lastClaim >= DAY_MS; }
+function getNextDailyReward() { return DAILY_REWARDS[Math.min(game.daily.streak, DAILY_REWARDS.length - 1)]; }
+function claimDaily() {
+  if (!canClaimDaily()) return;
+  if (Date.now() - game.daily.lastClaim > DAY_MS * 2) game.daily.streak = 0;
+  const reward = getNextDailyReward();
+  game.money += reward; game.totalEarned += reward; game.daily.streak++; game.daily.lastClaim = Date.now(); game.stats.dailyClaimed++;
+  sndDaily(); toast('Daily Bonus Claimed!', `Received ${money(reward)}. Streak: ${game.daily.streak} day${game.daily.streak !== 1 ? 's' : ''}.`, 'fa-gift', '#f5c451');
+  renderDaily(); updateHUD(); checkAchievements();
+}
+function maybeTriggerBoost() {
+  if (game.boost.value > 1 && Date.now() < game.boost.endTime) return;
+  if (Date.now() - game.lastBoost < 120000) return;
+  if (Math.random() > 0.15) return;
+  const rolls = [2, 2, 2, 3, 3, 5]; const value = rolls[Math.floor(Math.random() * rolls.length)];
+  const duration = 30 + Math.random() * 30;
+  game.boost.value = value; game.boost.endTime = Date.now() + duration * 1000; game.stats.boostsTriggered++; game.lastBoost = Date.now();
+  sndBoost(); toast('Lucky Boost!', `${value}× income for ${Math.floor(duration)} seconds!`, 'fa-bolt', '#f5c451');
+  updateBoostIndicator(); checkAchievements();
+}
+function updateBoostIndicator() {
+  const el = document.getElementById('boost-indicator');
+  if (game.boost.value > 1 && Date.now() < game.boost.endTime) {
+    const remaining = Math.ceil((game.boost.endTime - Date.now()) / 1000);
+    document.getElementById('boost-text').textContent = `${game.boost.value}× · ${remaining}s`;
+    el.classList.add('show');
+  } else { el.classList.remove('show'); game.boost.value = 1; }
+}
+
+function openPrestige() {
+  const gain = getPrestigeGain();
+  const el = document.getElementById('pres-body');
+  el.innerHTML = `
+    <div class="prestige-info">
+      <div class="prestige-mult">${getPrestigeMult().toFixed(2)}x</div>
+      <div class="prestige-sub">Current Global Multiplier</div>
+    </div>
+    <div style="background: var(--card-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px;">
+      <div style="font-size: 12px; color: var(--muted); margin-bottom: 5px;">Taking your company public will reset your money, buildings, and district, but grant you permanent Prestige Points.</div>
+      <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
+        <span>Prestige Points on Reset:</span><b style="color: var(--azure);">+${gain}</b>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 13px;">
+        <span>New Multiplier:</span><b style="color: var(--azure);">${(1 + (game.prestige.points + gain) * 0.1).toFixed(2)}x</b>
+      </div>
+    </div>
+    <button class="prestige-btn" id="do-prestige" ${gain > 0 ? '' : 'disabled'}>
+      ${gain > 0 ? `Go Public for +${gain} Points` : 'Need $1,000,000 Total Earned'}
+    </button>`;
+  document.getElementById('modal-prestige').classList.add('show');
+  document.getElementById('do-prestige').onclick = () => {
+    game.prestige.points += gain;
+    game.prestige.multiplier = getPrestigeMult();
+    game.money = 0; game.totalEarned = 0; game.clickPower = 1; game.clickLevel = 1; game.clickCost = 100;
+    game.autoTapper = 0; game.autoCost = 1000;
+    game.grid = new Array(9).fill(null); game.gridIndex = 0;
+    game.inventory = []; game.pullHistory = [];
+    sndPrestige(); closeModal('modal-prestige');
+    toast('COMPANY PUBLIC!', `You are now operating at ${game.prestige.multiplier.toFixed(2)}x capacity!`, 'fa-arrow-up-from-bracket', '#38bdf8');
+    confetti(window.innerWidth / 2, window.innerHeight / 2, '#38bdf8');
+    renderAll();
+  };
+}
+
+function checkAchievements() {
+  for (const a of ACHIEVEMENTS) {
+    if (!game.achievements.includes(a.id) && a.check(game)) {
+      game.achievements.push(a.id); sndAch();
+      toast('Achievement Unlocked!', `${a.name} — ${a.desc}`, a.icon, '#fbbf24');
+      renderAchMini();
+    }
+  }
+}
+
+let currentGame = null;
+let gameRAF = null;
+let gameInterval = null;
+
+function arcadeBase(gid) { return { flappy: 1000, snake: 5000, catcher: 2000 }[gid]; }
+function arcadeRewardPerPt(gid) { return arcadeBase(gid) * Math.pow(2, game.arcadeUpgrades[gid]); }
+function arcadeCost(gid) { return Math.floor(25000 * Math.pow(6, game.arcadeUpgrades[gid])); }
+
+function stopGameLoop() {
+    if (gameRAF) cancelAnimationFrame(gameRAF);
+    if (gameInterval) clearInterval(gameInterval);
+    gameRAF = null;
+    gameInterval = null;
+}
+
+function openArcade() {
+  const el = document.getElementById('arcade-body');
+  const cards = {
+    flappy: ['Flappy Crate', 'fa-feather', 'Fly through the pipes'],
+    snake: ['Snake Tycoon', 'fa-staff-snake', 'Eat the dollar signs'],
+    catcher: ['Coin Catcher', 'fa-hand-holding-dollar', 'Catch coins, dodge bombs']
+  };
+  el.innerHTML = `
+    <div style="font-size:12px; color:var(--muted); margin-bottom:12px; text-align:center;">Play games to earn cash rewards based on your score. Upgrade the reward rate to earn more per point!</div>
+    <div class="arcade-grid">
+      ${['flappy','snake','catcher'].map(g => {
+        const [name, icon, desc] = cards[g];
+        const cost = arcadeCost(g);
+        return `<div class="arcade-card">
+          <div class="arcade-icon"><i class="fas ${icon}"></i></div>
+          <div class="arcade-title">${name}</div>
+          <div class="arcade-desc">${desc}</div>
+          <div class="arcade-highscore">High Score: ${game.arcade[g]}</div>
+          <div class="arcade-reward">Reward: $${fmt(arcadeRewardPerPt(g))} / pt</div>
+          <button class="btn btn-sm" onclick="startGame('${g}')" style="width:100%;justify-content:center;"><i class="fas fa-play"></i> Play</button>
+          <button class="btn btn-sm btn-ghost" onclick="upgradeArcade('${g}')" ${game.money >= cost ? '' : 'disabled'} style="width:100%;justify-content:center;"><i class="fas fa-arrow-up"></i> Reward Lv ${game.arcadeUpgrades[g]} · $${fmt(cost)}</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+  openModal('modal-arcade');
+}
+
+function upgradeArcade(gid) {
+  const cost = arcadeCost(gid);
+  if (game.money < cost) { sndError(); toast('Not Enough Money', `Need ${money(cost)}.`, 'fa-circle-exclamation', '#ef4458'); return; }
+  game.money -= cost; game.arcadeUpgrades[gid]++;
+  sndUpgrade(); toast('Arcade Upgraded!', `Now pays ${money(arcadeRewardPerPt(gid))} per point.`, 'fa-gamepad', '#10d981');
+  openArcade(); updateHUD(); save();
+}
+
+function startGame(gameId) {
+  closeModal('modal-arcade');
+  stopGameLoop();
+  
+  const overlay = document.getElementById('game-overlay');
+  const scoreEl = document.getElementById('game-score');
+  const titleEl = document.getElementById('game-title');
+  const oTitle = document.getElementById('game-overlay-title');
+  const oDesc = document.getElementById('game-overlay-desc');
+  const startBtn = document.getElementById('game-start-btn');
+  const canvas = document.getElementById('game-canvas');
+  const ctx = canvas.getContext('2d');
+  
+  canvas.width = 440; canvas.height = 360;
+  scoreEl.style.display = 'none';
+  overlay.classList.remove('hide');
+  document.onkeydown = null;
+  canvas.onmousemove = null;
+  canvas.ontouchmove = null;
+  canvas.onclick = null;
+  
+  currentGame = gameId;
+
+  if (gameId === 'flappy') {
+    titleEl.innerHTML = '<i class="fas fa-feather"></i> Flappy Crate';
+    oTitle.textContent = 'Flappy Crate';
+    oDesc.textContent = 'Tap or press Space to fly. Avoid the pipes!';
+    startBtn.onclick = () => initFlappy(ctx, canvas);
+  } else if (gameId === 'snake') {
+    titleEl.innerHTML = '<i class="fas fa-staff-snake"></i> Snake Tycoon';
+    oTitle.textContent = 'Snake Tycoon';
+    oDesc.textContent = 'Use Arrow Keys or WASD to move. Eat dollar signs!';
+    startBtn.onclick = () => initSnake(ctx, canvas);
+  } else if (gameId === 'catcher') {
+    titleEl.innerHTML = '<i class="fas fa-hand-holding-dollar"></i> Coin Catcher';
+    oTitle.textContent = 'Coin Catcher';
+    oDesc.textContent = 'Move mouse/touch left and right. Catch coins, dodge bombs!';
+    startBtn.onclick = () => initCatcher(ctx, canvas);
+  }
+  openModal('modal-game');
+}
+
+function endGame(score) {
+  stopGameLoop();
+  if (!currentGame) return;
+  
+  const overlay = document.getElementById('game-overlay');
+  const oTitle = document.getElementById('game-overlay-title');
+  const oDesc = document.getElementById('game-overlay-desc');
+  const startBtn = document.getElementById('game-start-btn');
+  
+  let reward = Math.floor(score * arcadeRewardPerPt(currentGame) * game.prestige.multiplier);
+  
+  if (score > game.arcade[currentGame]) {
+    game.arcade[currentGame] = score;
+    oTitle.textContent = "New High Score!";
+  } else {
+    oTitle.textContent = "Game Over";
+  }
+  
+  game.money += reward; game.totalEarned += reward;
+  oDesc.innerHTML = `Score: <b style="color:var(--gold)">${score}</b><br>Reward: <b style="color:var(--emerald)">${money(reward)}</b>`;
+  startBtn.innerHTML = '<i class="fas fa-redo"></i> Play Again';
+  startBtn.onclick = () => startGame(currentGame);
+  overlay.classList.remove('hide');
+  document.getElementById('game-score').style.display = 'none';
+  sndArcade();
+  updateHUD(); save();
+}
+
+function initFlappy(ctx, canvas) {
+  const W = 440, H = 360;
+  let bird = { x: 100, y: 180, w: 28, h: 28, vel: 0, rot: 0 };
+  let pipes = [];
+  let score = 0;
+  let frame = 0;
+  const GRAVITY = 0.4;
+  const FLAP = -7;
+  const PIPE_SPEED = 2.5;
+  const GAP = 130;
+  
+  const flap = () => { bird.vel = FLAP; };
+  canvas.onclick = flap;
+  document.onkeydown = (e) => { if(e.code === 'Space') { e.preventDefault(); flap(); } };
+  
+  document.getElementById('game-overlay').classList.add('hide');
+  document.getElementById('game-score').style.display = 'block';
+  document.getElementById('game-score').textContent = '0';
+
+  function flappyLoop() {
+    frame++;
+    ctx.fillStyle = '#0d1322'; ctx.fillRect(0, 0, W, H);
+    
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    for(let i=0; i<4; i++) {
+      let x = (frame * 0.5 + i * 120) % (W + 80) - 40;
+      ctx.beginPath(); ctx.arc(x, 60 + i*30, 25, 0, Math.PI*2); ctx.fill();
+    }
+    
+    bird.vel += GRAVITY;
+    bird.y += bird.vel;
+    bird.rot = Math.max(-0.4, Math.min(1.2, bird.vel / 10));
+    
+    if (frame % 90 === 0) {
+      let gapY = 50 + Math.random() * (H - 100 - GAP);
+      pipes.push({ x: W, gapY: gapY, passed: false });
+    }
+    
+    ctx.fillStyle = '#10d981';
+    pipes.forEach(p => {
+      p.x -= PIPE_SPEED;
+      ctx.fillRect(p.x, 0, 50, p.gapY);
+      ctx.fillRect(p.x, p.gapY + GAP, 50, H - (p.gapY + GAP));
+      ctx.fillStyle = '#0aaf68';
+      ctx.fillRect(p.x - 3, p.gapY - 20, 56, 20);
+      ctx.fillRect(p.x - 3, p.gapY + GAP, 56, 20);
+      ctx.fillStyle = '#10d981';
+      
+      if (bird.x + bird.w > p.x && bird.x < p.x + 50) {
+        if (bird.y < p.gapY || bird.y + bird.h > p.gapY + GAP) {
+          endGame(score);
+        }
+      }
+      if (!p.passed && p.x + 50 < bird.x) {
+        p.passed = true; score++; sndClick();
+        document.getElementById('game-score').textContent = score;
+      }
+    });
+    pipes = pipes.filter(p => p.x > -60);
+    
+    ctx.save();
+    ctx.translate(bird.x + bird.w/2, bird.y + bird.h/2);
+    ctx.rotate(bird.rot);
+    ctx.fillStyle = '#f5c451';
+    ctx.fillRect(-bird.w/2, -bird.h/2, bird.w, bird.h);
+    ctx.strokeStyle = '#d99a2b'; ctx.lineWidth = 2;
+    ctx.strokeRect(-bird.w/2, -bird.h/2, bird.w, bird.h);
+    ctx.fillStyle = '#1a1408'; ctx.font = 'bold 18px Outfit'; ctx.textAlign = 'center';
+    ctx.fillText('$', 0, 5);
+    ctx.restore();
+    
+    if (bird.y > H - 10 || bird.y < 0) endGame(score);
+    
+    if (currentGame === 'flappy') gameRAF = requestAnimationFrame(flappyLoop);
+  }
+  flappyLoop();
+}
+
+function initSnake(ctx, canvas) {
+  const W = 440, H = 360, CELL = 20;
+  const COLS = W / CELL, ROWS = H / CELL;
+  let snake = [{x: 5, y: 9}, {x: 4, y: 9}, {x: 3, y: 9}];
+  let dir = {x: 1, y: 0};
+  let nextDir = {x: 1, y: 0};
+  let food = {x: 10, y: 9};
+  let score = 0;
+  
+  document.onkeydown = (e) => {
+    if (e.key === 'ArrowUp' && nextDir.y === 0) nextDir = {x: 0, y: -1};
+    if (e.key === 'ArrowDown' && nextDir.y === 0) nextDir = {x: 0, y: 1};
+    if (e.key === 'ArrowLeft' && nextDir.x === 0) nextDir = {x: -1, y: 0};
+    if (e.key === 'ArrowRight' && nextDir.x === 0) nextDir = {x: 1, y: 0};
+  };
+  
+  document.getElementById('game-overlay').classList.add('hide');
+  document.getElementById('game-score').style.display = 'block';
+  document.getElementById('game-score').textContent = '0';
+
+  function update() {
+    dir = nextDir;
+    let head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
+    
+    if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) return endGame(score);
+    if (snake.some(s => s.x === head.x && s.y === head.y)) return endGame(score);
+    
+    snake.unshift(head);
+    
+    if (head.x === food.x && head.y === food.y) {
+      score++; sndClick();
+      document.getElementById('game-score').textContent = score;
+      let newFood;
+      do {
+        newFood = {x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS)};
+      } while (snake.some(s => s.x === newFood.x && s.y === newFood.y));
+      food = newFood;
+    } else {
+      snake.pop();
+    }
+  }
+
+  function draw() {
+    ctx.fillStyle = '#0d1322'; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)'; ctx.lineWidth = 1;
+    for(let i=0; i<=COLS; i++) { ctx.beginPath(); ctx.moveTo(i*CELL, 0); ctx.lineTo(i*CELL, H); ctx.stroke(); }
+    for(let i=0; i<=ROWS; i++) { ctx.beginPath(); ctx.moveTo(0, i*CELL); ctx.lineTo(W, i*CELL); ctx.stroke(); }
+    
+    ctx.fillStyle = '#10d981';
+    ctx.beginPath(); ctx.arc(food.x*CELL + CELL/2, food.y*CELL + CELL/2, CELL/2 - 2, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 12px Outfit'; ctx.textAlign = 'center';
+    ctx.fillText('$', food.x*CELL + CELL/2, food.y*CELL + CELL/2 + 4);
+    
+    snake.forEach((s, i) => {
+      ctx.fillStyle = i === 0 ? '#f5c451' : '#d99a2b';
+      ctx.fillRect(s.x*CELL + 1, s.y*CELL + 1, CELL - 2, CELL - 2);
+      if (i === 0) {
+        ctx.fillStyle = '#1a1408'; ctx.font = 'bold 12px Outfit';
+        ctx.fillText('$', s.x*CELL + CELL/2, s.y*CELL + CELL/2 + 4);
+      }
+    });
+  }
+
+  gameInterval = setInterval(() => {
+    if (currentGame === 'snake') { update(); draw(); }
+  }, 110);
+}
+
+function initCatcher(ctx, canvas) {
+  const W = 440, H = 360;
+  let player = { x: W/2, w: 60, h: 20 };
+  let objs = [];
+  let score = 0;
+  let frame = 0;
+  let speed = 2;
+  
+  canvas.onmousemove = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    player.x = (e.clientX - rect.left) * (W / rect.width);
+  };
+  canvas.ontouchmove = (e) => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    player.x = (e.touches[0].clientX - rect.left) * (W / rect.width);
+  };
+  
+  document.getElementById('game-overlay').classList.add('hide');
+  document.getElementById('game-score').style.display = 'block';
+  document.getElementById('game-score').textContent = '0';
+
+  function catcherLoop() {
+    frame++;
+    ctx.fillStyle = '#0d1322'; ctx.fillRect(0, 0, W, H);
+    
+    if (frame % 30 === 0) {
+      let r = Math.random();
+      let type = r > 0.85 ? 'bomb' : (r > 0.6 ? 'cash' : 'coin');
+      objs.push({ x: Math.random() * (W - 40) + 20, y: -20, type: type, vel: speed + Math.random() * 1.5 });
+    }
+    if (frame % 300 === 0) speed += 0.5;
+    
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillRect(player.x - player.w/2, H - 30, player.w, player.h);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 12px Outfit'; ctx.textAlign = 'center';
+    ctx.fillText('BASKET', player.x, H - 17);
+    
+    objs.forEach(o => {
+      o.y += o.vel;
+      if (o.type === 'coin') {
+        ctx.fillStyle = '#f5c451';
+        ctx.beginPath(); ctx.arc(o.x, o.y, 10, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#1a1408'; ctx.font = 'bold 12px Outfit';
+        ctx.fillText('$', o.x, o.y + 4);
+      } else if (o.type === 'cash') {
+        ctx.fillStyle = '#10d981';
+        ctx.fillRect(o.x - 10, o.y - 6, 20, 12);
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 10px Outfit';
+        ctx.fillText('$$', o.x, o.y + 3);
+      } else {
+        ctx.fillStyle = '#ef4458';
+        ctx.beginPath(); ctx.arc(o.x, o.y, 10, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 12px Outfit';
+        ctx.fillText('X', o.x, o.y + 4);
+      }
+      
+      if (o.y > H - 35 && o.y < H - 15 && Math.abs(o.x - player.x) < player.w/2 + 10) {
+        if (o.type === 'bomb') return endGame(score);
+        if (o.type === 'coin') score += 1;
+        if (o.type === 'cash') score += 3;
+        sndClick();
+        document.getElementById('game-score').textContent = score;
+        o.y = H + 100;
+      }
+    });
+    objs = objs.filter(o => o.y < H + 50);
+    
+    if (currentGame === 'catcher') gameRAF = requestAnimationFrame(catcherLoop);
+  }
+  catcherLoop();
+}
+
+function updateHUD() {
+  document.getElementById('hud-money').textContent = money(game.money);
+  document.getElementById('hud-income').textContent = money(getIncome());
+  document.getElementById('hud-prestige').textContent = getPrestigeMult().toFixed(2) + 'x';
+}
+function renderClicker() {
+  document.getElementById('click-amount-display').textContent = money(game.clickPower * game.prestige.multiplier * (1 + game.discovered.length * 0.02));
+  document.getElementById('click-amount-text').textContent = money(game.clickPower * game.prestige.multiplier * (1 + game.discovered.length * 0.02));
+  document.getElementById('click-level').textContent = game.clickLevel;
+  document.getElementById('click-cost').textContent = fmt(game.clickCost);
+  document.getElementById('upgrade-click').disabled = game.money < game.clickCost;
+  document.getElementById('auto-level').textContent = game.autoTapper;
+  document.getElementById('auto-cost').textContent = fmt(game.autoCost);
+  document.getElementById('upgrade-auto').disabled = game.money < game.autoCost;
+}
+function renderQStats() {
+  const el = document.getElementById('qstats');
+  const entries = [
+    { icon: 'fa-hand-pointer', label: 'Total Clicks', value: fmt(game.stats.clicks) },
+    { icon: 'fa-box-open',     label: 'Crates Opened', value: fmt(game.stats.cratesOpened) },
+    { icon: 'fa-building',     label: 'Buildings', value: fmt(game.stats.buildingsPlaced) },
+    { icon: 'fa-sack-dollar',  label: 'Total Earned', value: money(game.totalEarned) },
+  ];
+  el.innerHTML = entries.map(e => `<div class="qstat"><span class="qlabel"><i class="fas ${e.icon}"></i>${e.label}</span><span class="qvalue">${e.value}</span></div>`).join('');
+}
+function renderAchMini() {
+  const el = document.getElementById('ach-grid');
+  el.innerHTML = ACHIEVEMENTS.map(a => {
+    const u = game.achievements.includes(a.id);
+    return `<div class="ach-cell ${u ? 'unlocked' : ''}" data-tip="${a.name}|${a.desc}"><i class="fas ${a.icon}"></i></div>`;
+  }).join('');
+  document.getElementById('ach-count').textContent = game.achievements.length;
+  document.getElementById('ach-total').textContent = ACHIEVEMENTS.length;
+}
+function renderGrid() {
+  const el = document.getElementById('grid'); const size = getGridSize();
+  el.style.gridTemplateColumns = `repeat(${size}, 80px)`; el.innerHTML = '';
+  for (let i = 0; i < game.grid.length; i++) {
+    const cell = document.createElement('div'); const c = game.grid[i];
+    if (c) {
+      const b = BUILDINGS[c.id]; const rc = RARITY_COLORS[b.rarity];
+      cell.className = 'grid-cell has-building' + (movingFrom === i ? ' moving-source' : '');
+      cell.innerHTML = `
+        <div class="building rarity-${b.rarity}" style="--rc:${rc};--rbg:${RARITY_BG[b.rarity]}">
+          ${c.level > 1 ? `<div class="building-level">${c.level}</div>` : ''}
+          <i class="fas ${b.icon} building-icon"></i>
+          <div class="building-name">${b.name}</div>
+          <div class="building-income">${fmt(buildingInc(b, c.level))}</div>
+        </div>`;
+      cell.onclick = movingFrom === null ? () => openBuildingManage(i) : () => moveAt(i);
+    } else {
+      if (placingId) {
+        cell.className = 'grid-cell placeable';
+        cell.innerHTML = `<i class="fas fa-plus" style="color:var(--gold);opacity:0.5"></i>`;
+        cell.onclick = () => placeAt(i);
+      } else if (movingFrom !== null) {
+        cell.className = 'grid-cell placeable';
+        cell.innerHTML = `<i class="fas fa-arrows-up-down-left-right" style="color:var(--gold);opacity:0.5"></i>`;
+        cell.onclick = () => moveAt(i);
+      } else {
+        cell.className = 'grid-cell';
+      }
+    }
+    el.appendChild(cell);
+  }
+  document.getElementById('grid-used').textContent = getGridUsed();
+  document.getElementById('grid-cap').textContent = getGridCap();
+  document.getElementById('grid-income').textContent = money(getBaseIncome());
+}
+function renderExpand() {
+  const next = GRID_SIZES[game.gridIndex + 1]; const cost = getExpandCost();
+  if (next) {
+    document.getElementById('next-grid').textContent = `${next}×${next}`;
+    document.getElementById('next-cost').textContent = money(cost);
+    document.getElementById('expand-btn').disabled = game.money < cost;
+  } else {
+    document.getElementById('next-grid').textContent = 'MAX';
+    document.getElementById('next-cost').textContent = '—';
+    document.getElementById('expand-btn').disabled = true;
+  }
+}
+function renderShop() {
+  const el = document.getElementById('crate-list');
+  el.innerHTML = Object.entries(CRATES).map(([id, c]) => {
+    const cant = game.money < c.price;
+    const odds = Object.entries(c.odds).filter(([k, v]) => v > 0).map(([k, v]) => ({ k, pct: v }));
+    return `
+      <div class="crate ${cant ? 'disabled' : ''}" style="--cc:${c.color}" data-crate="${id}">
+        <div class="crate-icon" style="--cc:${c.color}"><i class="fas ${c.icon}"></i></div>
+        <div class="crate-info">
+          <div class="crate-name">${c.name}</div>
+          <div class="crate-odds">${odds.map(o => `<span><span class="dot" style="background:${RARITY_COLORS[o.k]}"></span>${(o.pct*100).toFixed(1)}%</span>`).join('')}</div>
+        </div>
+        <div class="crate-price ${cant ? 'cant' : ''}">${fmt(c.price)}</div>
+      </div>`;
+  }).join('');
+}
+function renderInventory() {
+  const el = document.getElementById('inv-list');
+  if (game.inventory.length === 0) { el.innerHTML = `<div class="inv-empty"><i class="fas fa-box"></i><b>No buildings yet</b>Open crates from the Shop to get buildings.</div>`; return; }
+  const counts = {}; game.inventory.forEach(id => counts[id] = (counts[id] || 0) + 1);
+  el.innerHTML = Object.entries(counts).map(([id, count]) => {
+    const b = BUILDINGS[id]; const rc = RARITY_COLORS[b.rarity];
+    return `
+      <div class="inv-item" data-id="${id}" style="--rc:${rc};--rbg:${RARITY_BG[b.rarity]}">
+        <div class="inv-icon" style="background:${RARITY_BG[b.rarity]};color:${rc}"><i class="fas ${b.icon}"></i></div>
+        <div class="inv-info">
+          <div class="inv-name">${b.name} ${count > 1 ? `<span style="color:var(--muted);font-weight:400">×${count}</span>` : ''}</div>
+          <div class="inv-meta">${RARITY_LABELS[b.rarity]} · <span class="income">+${money(b.income)}/s</span></div>
+        </div>
+        <button class="inv-action" style="background:${rc}">Place</button>
+      </div>`;
+  }).join('');
+}
+function updateInvBadge() {
+  const badge = document.getElementById('inv-badge');
+  if (game.inventory.length > 0) { badge.style.display = 'inline-block'; badge.textContent = game.inventory.length; } else { badge.style.display = 'none'; }
+}
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  if (game.pullHistory.length === 0) { el.innerHTML = `<div class="inv-empty"><i class="fas fa-clock-rotate-left"></i><b>No history yet</b>Open crates to see your pulls here.</div>`; return; }
+  el.innerHTML = game.pullHistory.map(h => {
+    const b = BUILDINGS[h.id]; const rc = RARITY_COLORS[h.rarity]; const ago = timeAgo(h.time);
+    return `
+      <div class="history-item" style="--rc:${rc}">
+        <div class="h-icon"><i class="fas ${b.icon}"></i></div>
+        <div class="h-name">${b.name}</div>
+        <div class="h-rarity">${RARITY_LABELS[h.rarity]}</div>
+        <div style="font-size:9px;color:var(--muted);margin-left:6px">${ago}</div>
+      </div>`;
+  }).join('');
+}
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return s + 's'; if (s < 3600) return Math.floor(s / 60) + 'm';
+  if (s < 86400) return Math.floor(s / 3600) + 'h'; return Math.floor(s / 86400) + 'd';
+}
+function renderDaily() {
+  const btn = document.getElementById('daily-bonus-btn'); const sub = document.getElementById('daily-sub'); const reward = document.getElementById('daily-reward'); const can = canClaimDaily();
+  if (can) {
+    btn.classList.add('ready'); btn.disabled = false;
+    sub.textContent = `Streak: ${game.daily.streak} day${game.daily.streak !== 1 ? 's' : ''}`;
+    reward.textContent = money(getNextDailyReward());
+  } else {
+    btn.classList.remove('ready'); btn.disabled = true;
+    const remaining = DAY_MS - (Date.now() - game.daily.lastClaim);
+    sub.textContent = `Reset in ${formatTime(remaining)}`;
+    reward.textContent = money(getNextDailyReward());
+  }
+}
+async function renderLeaderboard() {
+  const el = document.getElementById('lb-body');
+  el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px 20px;"><i class="fas fa-circle-notch fa-spin" style="font-size:24px;margin-bottom:10px;display:block;opacity:0.5;"></i>Loading global rankings...</div>';
+  try {
+    const { data: lbData, error } = await supabaseClient.rpc('get_leaderboard', { p_limit: 50 });
+    if (error) throw error;
+    const player = { name: game.playerName || 'You', money: game.totalEarned, color: '#f5c451', isPlayer: true };
+    const dbPlayers = (lbData || []).map(d => ({ name: d.player_name || 'Tycoon', money: Number(d.total_earned) || 0, color: '#38bdf8', isPlayer: false }));
+    const all = [...dbPlayers, player];
+    all.sort((a, b) => b.money - a.money);
+    const max = Math.max(...all.map(x => x.money), 1);
+    el.innerHTML = all.map((p, i) => {
+      const rank = i + 1;
+      const pct = Math.max(2, (p.money / max) * 100);
+      return `
+        <div class="lb-entry ${p.isPlayer ? 'you' : ''} ${rank <= 3 ? 'top-' + rank : ''}" style="--ac:${p.color}">
+          <div class="lb-rank">${rank}</div>
+          <div class="lb-avatar">${p.name.charAt(0)}</div>
+          <div class="lb-info">
+            <div class="lb-name">${p.name}${p.isPlayer ? '<span class="you-tag">YOU</span>' : ''}</div>
+            <div class="lb-bar"><div class="lb-bar-fill" style="width:${pct}%"></div></div>
+          </div>
+          <div class="lb-money">${money(p.money)}</div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    el.innerHTML = `<div style="text-align:center;color:var(--muted);padding:30px 20px;"><i class="fas fa-triangle-exclamation" style="font-size:24px;margin-bottom:10px;display:block;opacity:0.5;"></i>Leaderboard unavailable.<br><span style="font-size:11px;">${e.message || 'Connection error'}</span></div>`;
+  }
+}
+function renderAchievements() {
+  const el = document.getElementById('ach-body');
+  el.innerHTML = ACHIEVEMENTS.map(a => {
+    const u = game.achievements.includes(a.id);
+    return `
+      <div class="ach-card ${u ? 'unlocked' : ''}">
+        <div class="ach-icon"><i class="fas ${a.icon}"></i></div>
+        <div class="ach-info"><div class="ach-name">${a.name}</div><div class="ach-desc">${a.desc}</div></div>
+        ${u ? '<i class="fas fa-check" style="color:var(--gold)"></i>' : '<i class="fas fa-lock" style="color:var(--muted);opacity:0.4"></i>'}
+      </div>`;
+  }).join('');
+}
+function renderCollection() {
+  const el = document.getElementById('coll-body');
+  el.innerHTML = `<div style="font-size:12px; color:var(--muted); margin-bottom:12px;">Discover unique buildings to gain a permanent +2% global income boost per discovery. Current Bonus: <b style="color:var(--gold)">+${game.discovered.length * 2}%</b></div>
+  <div class="collection-grid">
+    ${Object.entries(BUILDINGS).map(([id, b]) => {
+      const u = game.discovered.includes(id);
+      const rc = RARITY_COLORS[b.rarity];
+      return `<div class="coll-card ${u ? 'unlocked' : 'locked'}" style="--rc:${rc}">
+        <div class="coll-icon"><i class="fas ${u ? b.icon : 'fa-question'}"></i></div>
+        <div class="coll-name">${u ? b.name : '???'}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function renderSettings() {
+  const el = document.getElementById('settings-body');
+  const isLoggedIn = !!currentSession;
+  const userEmail = currentSession?.user?.email || '';
+  el.innerHTML = `
+    <div class="setting-group">
+      <h4>Account</h4>
+      <div id="auth-status">
+        <i class="fas ${isLoggedIn ? 'fa-user-check' : 'fa-user-xmark'}"></i>
+        <span>${isLoggedIn ? (userEmail || 'Guest Account') : 'Not Signed In'}</span>
+      </div>
+      ${!isLoggedIn ? `<button class="auth-btn" onclick="closeModal('modal-settings');showAuthModal('login')" style="margin-bottom:8px;"><i class="fas fa-right-to-bracket"></i> Sign In / Register</button>` : ''}
+      ${isLoggedIn ? `<button class="auth-btn secondary" onclick="doSignOut()" style="margin-bottom:8px;"><i class="fas fa-right-from-bracket"></i> Sign Out</button>` : ''}
+    </div>
+    <div class="setting-group">
+      <h4>Identity</h4>
+      <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+        <div class="setting-label">Tycoon Name</div>
+        <input type="text" id="player-name-input" value="${game.playerName || 'Tycoon'}" maxlength="16" style="background:var(--card);border:1px solid var(--border);color:var(--fg);padding:8px 11px;border-radius:8px;font-family:inherit;font-size:12px;outline:none;" />
+        <div class="setting-desc">This appears on the global leaderboard.</div>
+      </div>
+    </div>
+    <div class="setting-group">
+      <h4>Promo Codes</h4>
+      <div class="setting-row" style="flex-direction:column; align-items:stretch; gap:8px;">
+        <div class="setting-label">Redeem Code</div>
+        <div class="promo-input">
+          <input type="text" id="promo-input" placeholder="Enter code..." />
+          <button onclick="redeemCode()">Redeem</button>
+        </div>
+        <div class="setting-desc">Try "DARREN TRASH AND FB AND WG" for $1T, or "HANSEN" for an 80% chance at the legendary HANSEN building on your next crate!</div>
+      </div>
+    </div>
+    <div class="setting-group">
+      <h4>Gameplay</h4>
+      <div class="setting-row"><div><div class="setting-label">Sound Effects</div><div class="setting-desc">Clicks, reveals, and other sounds.</div></div><div class="toggle ${game.settings.sound ? 'on' : ''}" data-toggle="sound"></div></div>
+      <div class="setting-row"><div><div class="setting-label">Number Notation</div><div class="setting-desc">Compact (1.5M) or full (1,500,000).</div></div><select class="setting-select" data-setting="notation"><option value="short" ${game.settings.notation === 'short' ? 'selected' : ''}>Compact</option><option value="full" ${game.settings.notation === 'full' ? 'selected' : ''}>Full Numbers</option></select></div>
+      <div class="setting-row"><div><div class="setting-label">Auto-Save</div><div class="setting-desc">Sync progress to cloud automatically (every minute).</div></div><div class="toggle ${game.settings.autoSave ? 'on' : ''}" data-toggle="autoSave"></div></div>
+      <div class="setting-row"><div><div class="setting-label">Skip Crate Animation</div><div class="setting-desc">Instantly reveal crate results.</div></div><div class="toggle ${game.settings.skipCrateAnim ? 'on' : ''}" data-toggle="skipCrateAnim"></div></div>
+    </div>
+    <div class="setting-group">
+      <h4>Statistics</h4>
+      <div class="setting-row"><div class="setting-label">Total Earned</div><div style="font-family:Outfit;font-weight:700;color:var(--gold)">${money(game.totalEarned)}</div></div>
+      <div class="setting-row"><div class="setting-label">Total Clicks</div><div style="font-family:Outfit;font-weight:700">${fmt(game.stats.clicks)}</div></div>
+      <div class="setting-row"><div class="setting-label">Crates Opened</div><div style="font-family:Outfit;font-weight:700">${fmt(game.stats.cratesOpened)}</div></div>
+      <div class="setting-row"><div class="setting-label">Buildings Discovered</div><div style="font-family:Outfit;font-weight:700">${game.discovered.length} / ${Object.keys(BUILDINGS).length}</div></div>
+      <div class="setting-row"><div class="setting-label">Prestige Points</div><div style="font-family:Outfit;font-weight:700;color:var(--azure)">${game.prestige.points}</div></div>
+    </div>
+    <div class="setting-group">
+      <h4>Prestige</h4>
+      <button class="btn btn-blue" style="width:100%;justify-content:center" id="open-prestige"><i class="fas fa-arrow-up-from-bracket"></i> Go Public (Prestige)</button>
+    </div>
+    <div class="setting-group">
+      <h4>Save Data</h4>
+      <button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:6px;justify-content:center" id="manual-save"><i class="fas fa-floppy-disk"></i> Save to Cloud</button>
+      <button class="danger-btn" id="reset-game"><i class="fas fa-trash"></i> Reset Game (Permanent)</button>
+    </div>`;
+  const nameInput = el.querySelector('#player-name-input');
+  if (nameInput) {
+    nameInput.addEventListener('change', () => { game.playerName = nameInput.value.trim() || 'Tycoon'; save(); });
+  }
+  el.querySelectorAll('[data-toggle]').forEach(t => { t.onclick = () => { const k = t.dataset.toggle; game.settings[k] = !game.settings[k]; t.classList.toggle('on'); if (game.settings.sound) sndClick(); }; });
+  el.querySelectorAll('[data-setting]').forEach(s => { s.onchange = () => { game.settings[s.dataset.setting] = s.value; updateHUD(); renderShop(); renderInventory(); renderHistory(); }; });
+  el.querySelector('#manual-save').onclick = async () => { 
+    if (!supabaseReady) { toast('Offline Mode', 'Cannot save — not connected to servers.', 'fa-wifi', '#ef4458'); return; }
+    await save(); 
+    toast('Game Saved', 'Progress synced to cloud.', 'fa-cloud', '#10d981'); 
+  };
+  el.querySelector('#open-prestige').onclick = openPrestige;
+  el.querySelector('#reset-game').onclick = () => { if (confirm('Are you absolutely sure? This will permanently erase your entire empire from the cloud.')) { hardReset(); closeModal('modal-settings'); } };
+}
+function renderAll() {
+  updateHUD(); renderClicker(); renderQStats(); renderAchMini(); renderGrid(); renderExpand(); renderShop(); renderInventory(); renderHistory(); renderDaily(); updateInvBadge(); updateBoostIndicator();
+}
+
+function openMarket() {
+  renderMarket();
+  openModal('modal-market');
+}
+function getMarket() {
+  if (!game.market) game.market = { listings: [] };
+  if (!Array.isArray(game.market.listings)) game.market.listings = [];
+  return game.market.listings;
+}
+function renderMarket() {
+  const el = document.getElementById('market-body');
+  const listings = getMarket();
+  const counts = {}; game.inventory.forEach(id => counts[id] = (counts[id] || 0) + 1);
+  const hasItems = Object.keys(counts).length > 0;
+  const wantOptions = Object.entries(BUILDINGS).map(([id, b]) => `<option value="${id}">${b.name}</option>`).join('');
+  el.innerHTML = `
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;text-align:center;">List your spare buildings for money or trade them for other buildings.</div>
+    <div class="market-section">
+      <h4>List an Item</h4>
+      <div class="market-form">
+        <select id="mk-item">${hasItems ? Object.keys(counts).map(id => `<option value="${id}">${BUILDINGS[id].name} (×${counts[id]})</option>`).join('') : '<option value="">No buildings in inventory</option>'}</select>
+        <div style="display:flex;gap:8px;">
+          <input type="number" id="mk-count" value="1" min="1" max="99" placeholder="Qty" style="flex:1"/>
+          <input type="number" id="mk-price" value="1000" min="0" placeholder="Price $" style="flex:1.5"/>
+        </div>
+        <select id="mk-want"><option value="">Accept Money Only</option>${wantOptions}</select>
+        <button class="btn" id="mk-create" ${hasItems ? '' : 'disabled'} style="justify-content:center;"><i class="fas fa-tags"></i> Post Listing</button>
+      </div>
+    </div>
+    <div class="market-section">
+      <h4>Active Listings</h4>
+      ${listings.length ? `<div class="market-list">${listings.map((l, i) => renderListing(l, i)).join('')}</div>` : '<div class="inv-empty"><i class="fas fa-store"></i><b>No active listings</b>List your spare buildings to trade them.</div>'}
+    </div>`;
+  document.getElementById('mk-create')?.addEventListener('click', createListing);
+  document.querySelectorAll('[data-buy]').forEach(b => b.addEventListener('click', () => buyListing(Number(b.dataset.buy))));
+  document.querySelectorAll('[data-buy-trade]').forEach(b => b.addEventListener('click', () => tradeListing(Number(b.dataset.buyTrade))));
+  document.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', () => removeListing(Number(b.dataset.remove))));
+}
+function renderListing(l, i) {
+  const b = BUILDINGS[l.itemId]; if (!b) return '';
+  const rc = RARITY_COLORS[b.rarity];
+  const isOwn = l.seller === (game.playerName || 'Tycoon');
+  const counts = {}; game.inventory.forEach(id => counts[id] = (counts[id] || 0) + 1);
+  const haveWant = l.wantItem ? (counts[l.wantItem] || 0) >= 1 : false;
+  const canAfford = game.money >= l.price;
+  return `
+    <div class="ml-entry" style="--rc:${rc}">
+      <div class="inv-icon" style="background:${RARITY_BG[b.rarity]};color:${rc}"><i class="fas ${b.icon}"></i></div>
+      <div class="inv-info">
+        <div class="inv-name">${b.name} ×${l.count}</div>
+        <div class="inv-meta">${l.seller} · ${timeAgo(l.time)}</div>
+        <div style="font-size:10px;margin-top:2px;">
+          ${l.wantItem ? `Wants: <b style="color:var(--gold)">1× ${BUILDINGS[l.wantItem].name}</b>` : `Price: <b style="color:var(--gold)">${money(l.price)}</b>`}
+        </div>
+      </div>
+      ${isOwn
+        ? `<button class="btn btn-ghost btn-sm" data-remove="${i}"><i class="fas fa-xmark"></i> Remove</button>`
+        : `<div style="display:flex;flex-direction:column;gap:4px;align-items:stretch;">
+             ${l.wantItem ? `<button class="btn btn-sm btn-blue" data-buy-trade="${i}" ${haveWant ? '' : 'disabled'}><i class="fas fa-arrow-right-arrow-left"></i> Trade</button>` : `<button class="btn btn-sm" data-buy="${i}" ${canAfford ? '' : 'disabled'}><i class="fas fa-bag-shopping"></i> Buy ${money(l.price)}</button>`}
+           </div>`}
+    </div>`;
+}
+function createListing() {
+  const itemId = document.getElementById('mk-item')?.value;
+  const count = Math.max(1, Math.floor(Number(document.getElementById('mk-count')?.value) || 1));
+  const price = Math.max(0, Math.floor(Number(document.getElementById('mk-price')?.value) || 0));
+  const wantItem = document.getElementById('mk-want')?.value || '';
+  if (!itemId) return;
+  const counts = {}; game.inventory.forEach(id => counts[id] = (counts[id] || 0) + 1);
+  if ((counts[itemId] || 0) < count) { toast('Not Available', 'You do not have that many of this item.', 'fa-circle-exclamation', '#ef4458'); return; }
+  if (price <= 0 && !wantItem) { toast('Invalid Listing', 'Set a price or choose an item you want in trade.', 'fa-circle-exclamation', '#ef4458'); return; }
+  for (let i = 0; i < count; i++) { const idx = game.inventory.indexOf(itemId); if (idx >= 0) game.inventory.splice(idx, 1); }
+  getMarket().unshift({ id: Date.now() + Math.random(), seller: game.playerName || 'Tycoon', itemId, count, price, wantItem, time: Date.now() });
+  sndBuy(); toast('Listing Posted', `${BUILDINGS[itemId].name} ×${count} is now on the market.`, 'fa-tags', '#10d981');
+  renderMarket(); renderInventory(); updateInvBadge(); save();
+}
+function removeListing(i) {
+  const listings = getMarket(); const l = listings[i]; if (!l) return;
+  for (let j = 0; j < l.count; j++) game.inventory.push(l.itemId);
+  listings.splice(i, 1);
+  sndClick(); toast('Listing Removed', 'Items returned to your inventory.', 'fa-xmark', '#9ca3af');
+  renderMarket(); renderInventory(); updateInvBadge(); save();
+}
+function buyListing(i) {
+  const listings = getMarket(); const l = listings[i]; if (!l) return;
+  if (l.seller === (game.playerName || 'Tycoon')) { toast('Own Listing', 'You cannot buy your own listing.', 'fa-circle-exclamation', '#ef4458'); return; }
+  if (game.money < l.price) { toast('Not Enough Money', `Need ${money(l.price)}.`, 'fa-circle-exclamation', '#ef4458'); return; }
+  game.money -= l.price;
+  for (let j = 0; j < l.count; j++) game.inventory.push(l.itemId);
+  listings.splice(i, 1);
+  sndBuy(); toast('Purchase Complete!', `${BUILDINGS[l.itemId].name} ×${l.count} added to inventory.`, 'fa-bag-shopping', '#10d981');
+  renderMarket(); renderInventory(); updateInvBadge(); updateHUD(); save();
+}
+function tradeListing(i) {
+  const listings = getMarket(); const l = listings[i]; if (!l) return;
+  if (!l.wantItem) return;
+  if (l.seller === (game.playerName || 'Tycoon')) { toast('Own Listing', 'You cannot trade with your own listing.', 'fa-circle-exclamation', '#ef4458'); return; }
+  const idx = game.inventory.indexOf(l.wantItem);
+  if (idx < 0) { toast('Item Missing', `You need a ${BUILDINGS[l.wantItem].name} to make this trade.`, 'fa-circle-exclamation', '#ef4458'); return; }
+  game.inventory.splice(idx, 1);
+  for (let j = 0; j < l.count; j++) game.inventory.push(l.itemId);
+  listings.splice(i, 1);
+  sndBuy(); toast('Trade Complete!', `Traded for ${BUILDINGS[l.itemId].name} ×${l.count}.`, 'fa-arrow-right-arrow-left', '#10d981');
+  renderMarket(); renderInventory(); updateInvBadge(); save();
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.getElementById('tab-shop').style.display = name === 'shop' ? '' : 'none';
+  document.getElementById('tab-inv').style.display = name === 'inv' ? '' : 'none';
+  document.getElementById('tab-history').style.display = name === 'history' ? '' : 'none';
+}
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function updateSaveIndicator() {
+  const el = document.getElementById('save-ind-text');
+  if (!el) return;
+  if (!game.settings.autoSave) { el.textContent = 'Auto-save off'; return; }
+  if (!supabaseReady) { el.textContent = 'Local only'; return; }
+  if (Date.now() - (game.lastSaveFlash || 0) < 2000) { el.textContent = 'Saved'; return; }
+  const s = Math.max(0, Math.ceil((game.lastSave + 60000 - Date.now()) / 1000));
+  el.textContent = 'Auto-save in ' + s + 's';
+}
+
+function gameLoop() {
+  requestAnimationFrame(gameLoop);
+  try {
+    const now = Date.now(); const dt = (now - lastFrame) / 1000; lastFrame = now;
+  const inc = getIncome() * dt;
+  if (inc > 0) { game.money += inc; game.totalEarned += inc; }
+  if (game.autoTapper > 0) {
+    const autoEarn = game.clickPower * game.prestige.multiplier * (1 + game.discovered.length * 0.02) * game.autoTapper * dt;
+    game.money += autoEarn; game.totalEarned += autoEarn;
+  }
+  if (now - (game.lastBoostCheck || 0) > 5000) { maybeTriggerBoost(); game.lastBoostCheck = now; }
+  updateBoostIndicator(); updateHUD(); updateSaveIndicator();
+  uiCounter++;
+  if (uiCounter % 30 === 0) { renderShop(); renderClicker(); renderExpand(); renderDaily(); }
+  if (uiCounter % 60 === 0) renderHistory();
+  if (game.settings.autoSave && now - game.lastSave > 60000) { save(); game.lastSave = now; }
+  if (now - (game.lastAchCheck || 0) > 1000) { checkAchievements(); game.lastAchCheck = now; }
+  } catch (e) { console.error('Game loop error:', e); }
+}
+
+function spawnFloatingSymbols() {
+  const symbols = ['$', '€', '£', '¥', '₿'];
+  for (let i = 0; i < 12; i++) {
+    const s = document.createElement('div'); s.className = 'floating-symbol';
+    s.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+    s.style.left = Math.random() * 100 + 'vw'; s.style.fontSize = (40 + Math.random() * 70) + 'px';
+    s.style.animationDuration = (20 + Math.random() * 25) + 's'; s.style.animationDelay = -Math.random() * 30 + 's';
+    document.body.appendChild(s);
+  }
+}
+
+let currentSession = null;
+
+function hideLoadingScreen() {
+  const ls = document.getElementById('loading-screen');
+  if (!ls) return;
+  ls.classList.add('fade-out');
+  setTimeout(() => { ls.style.display = 'none'; }, 600);
+}
+
+function showAuthModal(mode) {
+  const el = document.getElementById('auth-body');
+  el.innerHTML = `
+    <div class="auth-tabs">
+      <button class="auth-tab ${mode === 'login' ? 'active' : ''}" data-auth-tab="login">Sign In</button>
+      <button class="auth-tab ${mode === 'register' ? 'active' : ''}" data-auth-tab="register">Create Account</button>
+    </div>
+    <div class="auth-form ${mode === 'login' ? 'active' : ''}" id="auth-login">
+      <label class="auth-label">Email</label>
+      <input type="email" class="auth-input" id="auth-email" placeholder="you@example.com" />
+      <label class="auth-label">Password</label>
+      <input type="password" class="auth-input" id="auth-password" placeholder="••••••••" />
+      <div class="auth-error" id="auth-login-error"></div>
+      <button class="auth-btn" id="auth-login-btn"><i class="fas fa-right-to-bracket"></i> Sign In</button>
+      <div class="auth-divider">or</div>
+      <button class="auth-btn secondary" id="auth-guest-btn"><i class="fas fa-user-secret"></i> Continue as Guest</button>
+      <button class="auth-btn secondary" id="auth-offline-btn" style="margin-top:4px;"><i class="fas fa-wifi"></i> Play Offline</button>
+    </div>
+    <div class="auth-form ${mode === 'register' ? 'active' : ''}" id="auth-register">
+      <label class="auth-label">Email</label>
+      <input type="email" class="auth-input" id="reg-email" placeholder="you@example.com" />
+      <label class="auth-label">Password</label>
+      <input type="password" class="auth-input" id="reg-password" placeholder="Min 6 characters" />
+      <label class="auth-label">Confirm Password</label>
+      <input type="password" class="auth-input" id="reg-confirm" placeholder="Repeat password" />
+      <div class="auth-error" id="auth-reg-error"></div>
+      <button class="auth-btn" id="auth-reg-btn"><i class="fas fa-user-plus"></i> Create Account</button>
+    </div>
+    <div class="auth-info">Guest accounts save to cloud anonymously. Registered accounts use email.</div>
+  `;
+  el.querySelectorAll('.auth-tab').forEach(t => {
+    t.addEventListener('click', () => {
+      const tab = t.dataset.authTab;
+      el.querySelectorAll('.auth-tab').forEach(x => x.classList.toggle('active', x === t));
+      el.querySelectorAll('.auth-form').forEach(x => x.classList.toggle('active', x.id === 'auth-' + tab));
+    });
+  });
+  el.querySelector('#auth-login-btn')?.addEventListener('click', doSignIn);
+  el.querySelector('#auth-reg-btn')?.addEventListener('click', doSignUp);
+  el.querySelector('#auth-guest-btn')?.addEventListener('click', doGuestSignIn);
+  el.querySelector('#auth-offline-btn')?.addEventListener('click', () => { closeModal('modal-auth'); toast('Offline Mode', 'Playing without cloud sync.', 'fa-wifi', '#ef4458'); });
+  el.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const form = inp.closest('.auth-form');
+        if (form?.id === 'auth-login') doSignIn();
+        else if (form?.id === 'auth-register') doSignUp();
+      }
+    });
+  });
+  openModal('modal-auth');
+}
+
+async function doSignIn() {
+  const email = document.getElementById('auth-email')?.value.trim();
+  const password = document.getElementById('auth-password')?.value;
+  const errEl = document.getElementById('auth-login-error');
+  const btn = document.getElementById('auth-login-btn');
+  if (!email || !password) { if (errEl) errEl.textContent = 'Please enter email and password.'; return; }
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Signing in...';
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    currentSession = data.session;
+    supabaseReady = true;
+    closeModal('modal-auth');
+    await loadGameFromCloud();
+    toast('Welcome back!', 'Signed in successfully.', 'fa-user-check', '#10d981');
+  } catch (e) {
+    if (errEl) errEl.textContent = e.message || 'Sign in failed.';
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-right-to-bracket"></i> Sign In';
+  }
+}
+
+async function doSignUp() {
+  const email = document.getElementById('reg-email')?.value.trim();
+  const password = document.getElementById('reg-password')?.value;
+  const confirm = document.getElementById('reg-confirm')?.value;
+  const errEl = document.getElementById('auth-reg-error');
+  const btn = document.getElementById('auth-reg-btn');
+  if (!email || !password) { if (errEl) errEl.textContent = 'Please fill in all fields.'; return; }
+  if (password.length < 6) { if (errEl) errEl.textContent = 'Password must be at least 6 characters.'; return; }
+  if (password !== confirm) { if (errEl) errEl.textContent = 'Passwords do not match.'; return; }
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Creating...';
+  try {
+    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+    if (error) throw error;
+
+    if (data.user && data.user.identities && data.user.identities.length === 0) {
+      if (errEl) errEl.innerHTML = '<span style="color:var(--emerald)">Account created! Open the verification email we just sent, click the confirm link, then come back to this website and sign in.</span>';
+      btn.disabled = false; btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+      toast('Check Your Email!', 'Open the verification email, confirm your address, then come back to this website and sign in.', 'fa-envelope', '#38bdf8');
+      return;
+    }
+
+    currentSession = data.session;
+    supabaseReady = true;
+    closeModal('modal-auth');
+    toast('Account Created!', 'Welcome to Capital Empire.', 'fa-user-plus', '#10d981');
+    await loadGameFromCloud();
+  } catch (e) {
+    if (errEl) errEl.textContent = e.message || 'Registration failed.';
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+  }
+}
+
+async function doGuestSignIn() {
+  const btn = document.getElementById('auth-guest-btn');
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Starting...';
+  try {
+    const { data, error } = await supabaseClient.auth.signInAnonymously();
+    if (error) throw error;
+    currentSession = data.session;
+    supabaseReady = true;
+    closeModal('modal-auth');
+    await loadGameFromCloud();
+    toast('Guest Mode', 'Playing with cloud sync enabled.', 'fa-user-secret', '#f5c451');
+  } catch (e) {
+    supabaseReady = false;
+    closeModal('modal-auth');
+    toast('Offline Mode', 'Could not connect. Progress is local only.', 'fa-wifi', '#ef4458');
+  }
+}
+
+async function doSignOut() {
+  try { await supabaseClient.auth.signOut(); } catch (e) {}
+  currentSession = null;
+  supabaseReady = false;
+  game = createNewGame();
+  renderAll();
+  toast('Signed Out', 'Your session has ended.', 'fa-right-from-bracket', '#9ca3af');
+  showAuthModal('login');
+}
+
+async function loadGameFromCloud() {
+  try {
+    const loaded = await load();
+    if (loaded) {
+      setTimeout(() => toast('Welcome Back!', `Balance: ${money(game.money)} · ${money(getIncome())}/sec`, 'fa-arrow-right-to-bracket', '#10d981'), 500);
+    } else {
+      setTimeout(() => toast('Welcome, Tycoon!', 'Click the gold button to earn your first dollars.', 'fa-hand-pointer', '#f5c451'), 500);
+    }
+  } catch (e) {
+    console.error('Cloud load failed:', e);
+    setTimeout(() => toast('Offline Mode', 'Playing with local progress.', 'fa-wifi', '#ef4458'), 500);
+  }
+}
+
+async function init() {
+  const loadingScreen = document.getElementById('loading-screen');
+  const loadingError = document.getElementById('loading-error');
+  const skipBtn = document.getElementById('loading-skip');
+
+  setTimeout(() => {
+    hideLoadingScreen();
+    if (skipBtn) skipBtn.style.display = 'none';
+  }, 2000);
+
+  setTimeout(() => {
+    if (skipBtn) {
+      skipBtn.style.display = 'inline-block';
+      skipBtn.onclick = () => {
+        hideLoadingScreen();
+        skipBtn.style.display = 'none';
+        toast('Offline Mode', 'Skipped connection. Playing locally.', 'fa-forward', '#9ca3af');
+      };
+    }
+  }, 1000);
+
+  try {
+    if (typeof supabase !== 'undefined' && supabase.createClient) {
+      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+  } catch (e) {
+    console.warn('Supabase init failed:', e);
+  }
+
+  if (supabaseClient) {
+    try {
+      const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+      if (sessionError) console.warn('Session error:', sessionError);
+
+      if (sessionData?.session) {
+        currentSession = sessionData.session;
+        supabaseReady = true;
+        await loadGameFromCloud();
+      } else {
+        setTimeout(() => showAuthModal('login'), 2200);
+      }
+
+      supabaseClient.auth.onAuthStateChange((event, session) => {
+        currentSession = session;
+        supabaseReady = !!session;
+        if (event === 'SIGNED_IN') toast('Connected', 'Cloud sync is now active.', 'fa-cloud', '#10d981');
+        else if (event === 'SIGNED_OUT') supabaseReady = false;
+      });
+    } catch (e) {
+      console.error('Auth init error:', e);
+      if (loadingError) {
+        loadingError.textContent = 'Connection issue. You can play offline or try signing in later from Settings.';
+        loadingError.style.display = 'block';
+      }
+      setTimeout(() => showAuthModal('login'), 2200);
+    }
+  } else {
+    if (loadingError) {
+      loadingError.textContent = 'Supabase library failed to load. Check your internet connection.';
+      loadingError.style.display = 'block';
+    }
+  }
+
+  renderAll(); spawnFloatingSymbols();
+  setupEventListeners();
+  lastFrame = Date.now(); requestAnimationFrame(gameLoop);
+}
+
+function setupEventListeners() {
+  document.addEventListener('click', async () => {
+    if (audioCtx && audioCtx.state === 'suspended') await audioCtx.resume();
+  }, { once: true });
+
+  document.getElementById('click-btn').addEventListener('click', doClick);
+  document.getElementById('upgrade-click').addEventListener('click', upgradeClick);
+  document.getElementById('upgrade-auto').addEventListener('click', upgradeAuto);
+  document.getElementById('expand-btn').addEventListener('click', expandGrid);
+  document.getElementById('cancel-placing').addEventListener('click', cancelPlacing);
+  document.getElementById('crate-place').addEventListener('click', placeFromCrate);
+  document.getElementById('daily-bonus-btn').addEventListener('click', claimDaily);
+
+  document.getElementById('crate-list').addEventListener('click', (e) => {
+    const crateEl = e.target.closest('.crate');
+    if (crateEl && !crateEl.classList.contains('disabled')) buyCrate(crateEl.dataset.crate);
+  });
+
+  document.getElementById('inv-list').addEventListener('click', (e) => {
+    const itemEl = e.target.closest('.inv-item');
+    if (itemEl) startPlacing(itemEl.dataset.id);
+  });
+
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+
+  document.getElementById('btn-market').addEventListener('click', openMarket);
+  document.getElementById('btn-arcade').addEventListener('click', openArcade);
+  document.getElementById('btn-collection').addEventListener('click', () => { renderCollection(); openModal('modal-collection'); });
+  document.getElementById('btn-leaderboard').addEventListener('click', () => { renderLeaderboard(); openModal('modal-leaderboard'); });
+  document.getElementById('btn-achievements').addEventListener('click', () => { renderAchievements(); openModal('modal-achievements'); });
+  document.getElementById('btn-settings').addEventListener('click', () => { renderSettings(); openModal('modal-settings'); });
+
+  document.querySelectorAll('[data-close]').forEach(b => { 
+    b.addEventListener('click', e => {
+      const modal = e.target.closest('.modal-bg');
+      modal.classList.remove('show');
+      if (modal.id === 'modal-game') { stopGameLoop(); currentGame = null; document.onkeydown = null; }
+      crateAnimating = false;
+    });
+  });
+
+  document.querySelectorAll('.modal-bg').forEach(bg => { 
+    bg.addEventListener('click', e => { 
+      if (e.target === bg) {
+        bg.classList.remove('show');
+        if (bg.id === 'modal-game') { stopGameLoop(); currentGame = null; document.onkeydown = null; }
+      }
+    });
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { 
+      document.querySelectorAll('.modal-bg.show').forEach(m => {
+        m.classList.remove('show');
+        if (m.id === 'modal-game') { stopGameLoop(); currentGame = null; document.onkeydown = null; }
+      });
+      if (placingId || movingFrom !== null) cancelPlacing(); 
+    }
+    if (e.key === ' ' && !e.target.matches('input,select,textarea') && !document.getElementById('modal-game').classList.contains('show')) { 
+      e.preventDefault(); document.getElementById('click-btn').click(); 
+    }
+  });
+
+  const tip = document.getElementById('help-tip');
+  document.addEventListener('mouseover', e => {
+    const target = e.target.closest('[data-tip]');
+    if (target) {
+      const [name, desc] = target.dataset.tip.split('|');
+      tip.innerHTML = `<b>${name}</b>${desc}`;
+      const r = target.getBoundingClientRect();
+      tip.style.left = r.left + 'px'; tip.style.top = (r.bottom + 6) + 'px'; tip.classList.add('show');
+    }
+  });
+  document.addEventListener('mouseout', e => { if (e.target.closest('[data-tip]')) tip.classList.remove('show'); });
+
+  window.addEventListener('beforeunload', () => { if (supabaseReady) save(); });
+  window.addEventListener('pagehide', () => { if (supabaseReady) save(); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && supabaseReady) save(); });
+
+  window.redeemCode = redeemCode;
+  window.startGame = startGame;
+  window.upgradeArcade = upgradeArcade;
+}
+init();
+</script>
+</body>
+</html>
